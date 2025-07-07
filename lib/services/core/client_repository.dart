@@ -83,7 +83,6 @@ class ClientRepository {
         queryDuration: result.queryDuration,
       );
     } catch (e) {
-      print('❌ Error fetching clients: $e');
       rethrow;
     }
   }
@@ -108,7 +107,6 @@ class ClientRepository {
       if (result == null) return null;
       return Client.fromJson(result.fields);
     } catch (e) {
-      print('❌ Error fetching client by ID: $e');
       rethrow;
     }
   }
@@ -145,7 +143,6 @@ class ClientRepository {
 
       return await getClientById(newId) ?? client;
     } catch (e) {
-      print('❌ Error creating client: $e');
       rethrow;
     }
   }
@@ -181,7 +178,6 @@ class ClientRepository {
 
       return await getClientById(client.id) ?? client;
     } catch (e) {
-      print('❌ Error updating client: $e');
       rethrow;
     }
   }
@@ -205,7 +201,6 @@ class ClientRepository {
 
       return (result.affectedRows ?? 0) > 0;
     } catch (e) {
-      print('❌ Error deleting client: $e');
       rethrow;
     }
   }
@@ -244,7 +239,6 @@ class ClientRepository {
         'inactive': result.fields['inactive'],
       };
     } catch (e) {
-      print('❌ Error getting client stats: $e');
       rethrow;
     }
   }

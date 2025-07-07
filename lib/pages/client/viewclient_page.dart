@@ -138,7 +138,6 @@ class _ViewClientPageState extends State<ViewClientPage> {
       if (mounted) {
         try {
           if (query.isNotEmpty) {
-            print('🔍 Performing search for: "$query"');
 
             // Always perform search regardless of hasMore status
             final updatedOutlets = await _searchService.searchClients(
@@ -162,7 +161,6 @@ class _ViewClientPageState extends State<ViewClientPage> {
                   _isSearching = false; // Only clear after search completes
                 });
               }
-              print('✅ Search completed. Found ${_outlets.length} clients');
             }
           } else if (query.isEmpty) {
             // If query is empty, reload original data with loading state
@@ -177,7 +175,6 @@ class _ViewClientPageState extends State<ViewClientPage> {
             }
           }
         } catch (e) {
-          print('❌ Error during search: $e');
           if (mounted) {
             setState(() {
               _isSearching = false;
@@ -210,18 +207,13 @@ class _ViewClientPageState extends State<ViewClientPage> {
     try {
       // Get current user's country ID for filtering
       final currentUser = await _db.getCurrentUserDetails();
-      print('DEBUG: currentUser = $currentUser');
       final countryId = currentUser['countryId'];
-      print('DEBUG: countryId = $countryId');
 
-      print('📍 Loading clients for country ID: $countryId');
 
       // First load from cache for quick display
       await _loadFromCache();
-      print('?? Loaded ${_outlets.length} clients from cache');
 
       // Then fetch from pagination service with country filter
-      print('?? Fetching page 1 with limit $_pageSize for country $countryId');
 
       final result = await _paginationService.fetchOffset(
         table: 'Clients',
@@ -269,7 +261,6 @@ class _ViewClientPageState extends State<ViewClientPage> {
             '🔎 [DEBUG] Fetched client countryIds: ${outlets.map((o) => o.countryId.toString()).join(', ')}');
       }
 
-      print('? Fetched ${outlets.length} clients for country $countryId');
 
       if (mounted) {
         setState(() {
@@ -277,11 +268,8 @@ class _ViewClientPageState extends State<ViewClientPage> {
           _isLoading = false;
           _hasMore = result.hasMore;
         });
-        print('?? Total clients loaded: ${_outlets.length}');
-        print('?? Has more clients: $_hasMore');
       }
     } catch (e) {
-      print('? Error loading clients: $e');
       if (mounted) {
         setState(() {
           _errorMessage =
@@ -325,9 +313,7 @@ class _ViewClientPageState extends State<ViewClientPage> {
       setState(() {
         _outlets = outlets;
       });
-      print('?? Loaded ${outlets.length} clients from cache');
     } else {
-      print('?? No cached clients available');
     }
   }
 
@@ -341,9 +327,7 @@ class _ViewClientPageState extends State<ViewClientPage> {
     try {
       // Get current user's country ID for filtering
       final currentUser = await _db.getCurrentUserDetails();
-      print('DEBUG: currentUser = $currentUser');
       final countryId = currentUser['countryId'];
-      print('DEBUG: countryId = $countryId');
 
       print(
           '📍 Loading more clients for country ID: $countryId - page ${_currentPage + 1}');
@@ -403,11 +387,8 @@ class _ViewClientPageState extends State<ViewClientPage> {
           _isLoadingMore = false;
           _hasMore = result.hasMore;
         });
-        print('?? Total clients after loading more: ${_outlets.length}');
-        print('?? Has more clients: $_hasMore');
       }
     } catch (e) {
-      print('? Error loading more clients: $e');
       if (mounted) {
         setState(() {
           _isLoadingMore = false;
@@ -750,7 +731,6 @@ class _ViewClientPageState extends State<ViewClientPage> {
           final result = await Get.to(() => const AddClientPage());
           // Only refresh if client was successfully added
           if (result == true && mounted) {
-            print('?? Client added successfully, refreshing list');
             // Use the same working method as initial load
             await _loadOutlets();
           }
@@ -761,4 +741,3 @@ class _ViewClientPageState extends State<ViewClientPage> {
     );
   }
 }
-

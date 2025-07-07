@@ -10,7 +10,6 @@ class PermissionService {
   /// Request all required permissions for the app
   Future<Map<Permission, PermissionStatus>> requestPermissions() async {
     try {
-      print('🔐 Requesting runtime permissions...');
 
       // List of permissions to request
       final permissions = [
@@ -23,14 +22,11 @@ class PermissionService {
       // Request all permissions at once - let native dialogs handle it
       final results = await permissions.request();
 
-      print('📋 Permission request results:');
       results.forEach((permission, status) {
-        print('   - ${permission.toString().split('.').last}: $status');
       });
 
       return results;
     } catch (e) {
-      print('❌ Error requesting permissions: $e');
       return {};
     }
   }
@@ -45,10 +41,8 @@ class PermissionService {
   Future<PermissionStatus> requestPermission(Permission permission) async {
     try {
       final status = await permission.request();
-      print('🔐 ${permission.toString().split('.').last}: $status');
       return status;
     } catch (e) {
-      print('❌ Error requesting ${permission.toString().split('.').last}: $e');
       return PermissionStatus.denied;
     }
   }

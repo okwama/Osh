@@ -18,7 +18,6 @@ class _TestWidgetState extends State<TestWidget> {
 
   @override
   Widget build(BuildContext context) {
-    print("Building widget"); // This will trigger avoid_print
 
     return Scaffold(
       appBar: AppBar(

@@ -68,12 +68,10 @@ class CurrencyConfigService {
           _lastCacheUpdate != null) {
         final timeSinceUpdate = DateTime.now().difference(_lastCacheUpdate!);
         if (timeSinceUpdate < _cacheExpiry) {
-          print('🔄 [CurrencyConfig] Using cached currency configs');
           return _currencyConfigCache!;
         }
       }
 
-      print('🔄 [CurrencyConfig] Fetching currency configs from database...');
 
       // Get all countries from database
       const sql = '''
@@ -109,7 +107,6 @@ class CurrencyConfigService {
           '✅ [CurrencyConfig] Loaded ${configs.length} currency configurations');
       return configs;
     } catch (e) {
-      print('❌ [CurrencyConfig] Error fetching currency configs: $e');
       // Return default config if database fails
       return _getDefaultConfigs();
     }
@@ -233,7 +230,6 @@ class CurrencyConfigService {
       final results = await _db.query(sql);
       return results.isNotEmpty;
     } catch (e) {
-      print('❌ [CurrencyConfig] Error checking currency fields: $e');
       return false;
     }
   }
@@ -258,7 +254,6 @@ class CurrencyConfigService {
   static void clearCache() {
     _currencyConfigCache = null;
     _lastCacheUpdate = null;
-    print('🗑️ [CurrencyConfig] Cache cleared');
   }
 
   /// Get all supported countries

@@ -93,9 +93,7 @@ class _HomePageState extends State<HomePage> {
         });
       }
 
-      print('📋 Loaded $_pendingJourneyPlans pending journey plans for today');
     } catch (e) {
-      print('Error loading pending journey plans: $e');
       if (mounted) {
         setState(() {
           _pendingJourneyPlans = 0;
@@ -113,7 +111,6 @@ class _HomePageState extends State<HomePage> {
         });
       }
     } catch (e) {
-      print('Error loading pending tasks: $e');
     }
   }
 
@@ -128,9 +125,7 @@ class _HomePageState extends State<HomePage> {
         });
       }
 
-      print('📢 Loaded $_unreadNotices recent notices');
     } catch (e) {
-      print('Error loading unread notices: $e');
       if (mounted) {
         setState(() {
           _unreadNotices = 0;
@@ -156,7 +151,6 @@ class _HomePageState extends State<HomePage> {
         });
       }
     } catch (e) {
-      print('❌ Error loading data in parallel: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -180,7 +174,6 @@ class _HomePageState extends State<HomePage> {
         }
       }
     } catch (e) {
-      print('Error checking session status: $e');
       // Don't change session state on database errors - keep current state
       // This prevents false "session expired" messages
     }
@@ -206,9 +199,7 @@ class _HomePageState extends State<HomePage> {
         for (final key in keysToRemove) {
           box.remove(key);
         }
-        print('✅ Cleared ${keysToRemove.length} cache keys');
       } catch (e) {
-        print('❌ Error clearing cache: $e');
       }
     });
   }
@@ -229,24 +220,18 @@ class _HomePageState extends State<HomePage> {
       try {
         final productHiveService = Get.find<ProductHiveService>();
         await productHiveService.clearAllProducts();
-        print('?? Cleared product Hive cache');
       } catch (e) {
-        print('?? Could not clear product Hive cache: $e');
       }
 
       try {
         final cartHiveService = Get.find<CartHiveService>();
         await cartHiveService.clearCart();
-        print('?? Cleared cart Hive cache');
       } catch (e) {
-        print('?? Could not clear cart Hive cache: $e');
       }
 
       // Clear session cache
       SessionService.clearCache();
-      print('?? Cleared session cache');
 
-      print('?? Cache cleared successfully');
 
       // Reload all data
       await Future.wait([
@@ -268,7 +253,6 @@ class _HomePageState extends State<HomePage> {
         );
       }
     } catch (e) {
-      print('? Error during refresh: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -405,7 +389,6 @@ class _HomePageState extends State<HomePage> {
         duration: const Duration(seconds: 2),
       );
     } catch (e) {
-      print('Error during logout: $e');
       if (!mounted) return;
 
       // Close loading indicator if it's showing

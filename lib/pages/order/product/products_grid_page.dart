@@ -76,7 +76,6 @@ class _ProductsGridPageState extends State<ProductsGridPage>
         setState(() {});
       }
     } catch (e) {
-      print('Error loading currency config: $e');
     }
   }
 
@@ -94,18 +93,15 @@ class _ProductsGridPageState extends State<ProductsGridPage>
       // Try to get the ProductHiveService from Get
       if (Get.isRegistered<ProductHiveService>()) {
         _productHiveService = Get.find<ProductHiveService>();
-        debugPrint('[ProductsGrid] Found ProductHiveService from Get');
       } else {
         _productHiveService = ProductHiveService();
         await _productHiveService.init();
         Get.put(_productHiveService);
-        debugPrint('[ProductsGrid] Created new ProductHiveService instance');
       }
 
       // Load data
       await _loadFromCacheAndApi();
     } catch (e) {
-      debugPrint('[ProductsGrid] Error initializing: $e');
       _loadInitialData();
     }
   }
@@ -208,7 +204,6 @@ class _ProductsGridPageState extends State<ProductsGridPage>
       // Refresh stock service cache
       await StockService.instance.refreshCache();
 
-      print('[ProductsGrid] 🔄 Manual refresh completed');
     } finally {
       if (mounted) {
         setState(() {
@@ -235,7 +230,6 @@ class _ProductsGridPageState extends State<ProductsGridPage>
     // 1. We have internet connection AND
     // 2. Cache is not fresh OR we have no cached data
     if (_isConnected && (!isCacheFresh || _products.isEmpty)) {
-      print('[ProductsGrid] Cache not fresh or empty, fetching from API...');
       await _loadInitialData();
     } else if (_isConnected && isCacheFresh) {
       print(
@@ -277,10 +271,8 @@ class _ProductsGridPageState extends State<ProductsGridPage>
           });
         }
       } else {
-        print('[ProductsGrid] No cached products found');
       }
     } catch (e) {
-      debugPrint('[ProductsGrid] Error loading products from cache: $e');
     }
   }
 
@@ -314,7 +306,6 @@ class _ProductsGridPageState extends State<ProductsGridPage>
             '[ProductsGrid] ✅ Successfully cached ${products.length} products');
       }
     } catch (e) {
-      debugPrint('[ProductsGrid] Error loading products from API: $e');
       if (mounted) {
         setState(() {
           _error = _isConnected
@@ -338,7 +329,6 @@ class _ProductsGridPageState extends State<ProductsGridPage>
             '[ProductsGrid] ⚠️ ProductHiveService not registered, cannot cache');
       }
     } catch (e) {
-      print('[ProductsGrid] ❌ Error saving to cache: $e');
     }
   }
 
@@ -358,7 +348,6 @@ class _ProductsGridPageState extends State<ProductsGridPage>
           _isLoading = false;
         });
     } catch (e) {
-      debugPrint('[ProductsGrid] Error loading more products: $e');
       if (mounted) {
         setState(() {
           _error = 'Failed to load more products';

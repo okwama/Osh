@@ -32,7 +32,6 @@ class AuthService {
         'success': true,
       };
     } catch (e) {
-      print('❌ Error getting profile: $e');
       return null;
     }
   }
@@ -55,7 +54,6 @@ class AuthService {
       }
       return null;
     } catch (e) {
-      print('❌ Error updating profile photo: $e');
       return null;
     }
   }
@@ -117,7 +115,6 @@ class AuthService {
         };
       }
     } catch (e) {
-      print('❌ Error updating password: $e');
       return {
         'success': false,
         'message': 'An error occurred while updating password',
@@ -202,7 +199,6 @@ class AuthService {
         };
       }
     } catch (e) {
-      print('❌ Error registering user: $e');
       return {
         'success': false,
         'message': 'An error occurred while registering user',
@@ -251,7 +247,6 @@ class AuthService {
         'salesRep': salesRep.toMap(),
       };
     } catch (e) {
-      print('❌ Error during login: $e');
       return {
         'success': false,
         'message': 'An error occurred during login',
@@ -271,7 +266,6 @@ class AuthService {
       final result = await _db.query(sql, [token]);
       return (result.affectedRows ?? 0) > 0;
     } catch (e) {
-      print('❌ Error during logout: $e');
       return false;
     }
   }

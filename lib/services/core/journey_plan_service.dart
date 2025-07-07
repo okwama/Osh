@@ -97,7 +97,6 @@ class JourneyPlanService {
 
       return results.map((row) => _mapToJourneyPlan(row.fields)).toList();
     } catch (e) {
-      print('❌ Error fetching journey plans: $e');
       rethrow;
     }
   }
@@ -154,7 +153,6 @@ class JourneyPlanService {
       final results = await _db.query(sql, journeyPlanIds);
       return results.map((row) => _mapToJourneyPlan(row.fields)).toList();
     } catch (e) {
-      print('❌ Error fetching journey plans by IDs: $e');
       rethrow;
     }
   }
@@ -166,7 +164,6 @@ class JourneyPlanService {
       final results = await getJourneyPlansByIds([journeyPlanId]);
       return results.isNotEmpty ? results.first : null;
     } catch (e) {
-      print('❌ Error fetching journey plan by ID: $e');
       rethrow;
     }
   }
@@ -229,7 +226,6 @@ class JourneyPlanService {
         routeId: null,
       );
     } catch (e) {
-      print('❌ Error fetching journey plan completion status: $e');
       rethrow;
     }
   }
@@ -259,7 +255,6 @@ class JourneyPlanService {
         'clientId': row['clientId'],
       };
     } catch (e) {
-      print('❌ Error fetching journey plan basic status: $e');
       rethrow;
     }
   }
@@ -305,7 +300,6 @@ class JourneyPlanService {
       }
       return createdPlan;
     } catch (e) {
-      print('❌ Error creating journey plan: $e');
       rethrow;
     }
   }
@@ -393,16 +387,13 @@ class JourneyPlanService {
               throw TimeoutException('Query timeout after 10 seconds');
             },
           );
-          print('✅ JourneyPlan UPDATE successful on attempt $attempt');
           break; // Success - exit retry loop
         } catch (e) {
           lastException = e as Exception;
-          print('⚠️ JourneyPlan UPDATE attempt $attempt failed: $e');
 
           if (attempt < 3) {
             // Exponential backoff: 1s, 2s, 4s
             final delay = Duration(seconds: 1 << (attempt - 1));
-            print('⏳ Retrying in ${delay.inSeconds} seconds...');
             await Future.delayed(delay);
           }
         }
@@ -420,7 +411,6 @@ class JourneyPlanService {
       }
       return updatedPlan;
     } catch (e) {
-      print('❌ Error updating journey plan: $e');
       rethrow;
     }
   }
@@ -431,7 +421,6 @@ class JourneyPlanService {
       const sql = 'DELETE FROM JourneyPlan WHERE id = ? AND status = 0';
       await _db.query(sql, [journeyId]);
     } catch (e) {
-      print('❌ Error deleting journey plan: $e');
       rethrow;
     }
   }

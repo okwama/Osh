@@ -50,7 +50,6 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
         });
       }
     } catch (e) {
-      print('Error loading order items: $e');
     }
   }
 
@@ -65,7 +64,6 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
       }
     } catch (e) {
       // Silently fail - void status is optional
-      print('Error checking void status: $e');
     }
   }
 
@@ -944,4 +942,3 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
     );
   }
 }
-

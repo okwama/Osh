@@ -97,7 +97,6 @@ class _JourneyPlansLoadingScreenState extends State<JourneyPlansLoadingScreen> {
         );
       }
     } catch (e) {
-      print('Error preloading data: $e');
       // If there's an error, still navigate but with empty data
       if (mounted) {
         Get.off(
@@ -318,7 +317,6 @@ class _JourneyPlansPageState extends State<JourneyPlansPage>
       }
     } catch (e) {
       // Silent fail for background refresh
-      print('Failed to refresh journey plans: $e');
     }
   }
 
@@ -355,7 +353,6 @@ class _JourneyPlansPageState extends State<JourneyPlansPage>
         });
       }
     } catch (e) {
-      print('Failed to load more journey plans: $e');
     } finally {
       setState(() {
         _isLoadingMore = false;
@@ -415,7 +412,6 @@ class _JourneyPlansPageState extends State<JourneyPlansPage>
         });
       }
     } catch (e) {
-      print('Failed to load journey plans: $e');
       if (mounted) {
         _showGenericErrorDialog();
       }
@@ -489,7 +485,6 @@ class _JourneyPlansPageState extends State<JourneyPlansPage>
         });
       }
     } catch (e) {
-      print('Failed to check active visit: $e');
     }
   }
 
@@ -532,7 +527,6 @@ class _JourneyPlansPageState extends State<JourneyPlansPage>
     } catch (e) {
       if (mounted) {
         Get.back();
-        print('Failed to load clients: $e');
       }
     }
   }
@@ -638,7 +632,6 @@ class _JourneyPlansPageState extends State<JourneyPlansPage>
             _activeVisit = result;
           }
         });
-        print('✅ Journey plan updated from checkout: ${result.statusText}');
       } else if (mounted) {
         // Fallback refresh if no result returned
         _refreshJourneyPlanStatus(journeyPlan.id!);
@@ -686,10 +679,8 @@ class _JourneyPlansPageState extends State<JourneyPlansPage>
             _activeVisit = _journeyPlans[index];
           }
         });
-        print('✅ Ultra-quick status update: ${basicStatus['status']}');
       }
     } catch (e) {
-      print('Failed to refresh journey plan status: $e');
       // Fallback to lightweight method if ultra-minimal fails
       try {
         final updatedPlan =
@@ -724,10 +715,8 @@ class _JourneyPlansPageState extends State<JourneyPlansPage>
               _activeVisit = _journeyPlans[index];
             }
           });
-          print('✅ Lightweight status update: ${updatedPlan.statusText}');
         }
       } catch (e2) {
-        print('Both status update methods failed: $e2');
         // Final fallback to batch refresh
         await _batchRefreshJourneyPlanStatus([journeyPlanId]);
       }
@@ -761,7 +750,6 @@ class _JourneyPlansPageState extends State<JourneyPlansPage>
         });
       }
     } catch (e) {
-      print('Failed to batch refresh journey plan status: $e');
     }
   }
 
@@ -838,7 +826,6 @@ class _JourneyPlansPageState extends State<JourneyPlansPage>
         );
       }
     } catch (e) {
-      print('Failed to delete journey plan: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1115,4 +1102,3 @@ class JourneyPlanItem extends StatelessWidget {
     );
   }
 }
-

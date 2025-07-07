@@ -45,7 +45,6 @@ class _UpliftSalesPageState extends State<UpliftSalesPage> {
       _sales.value = sales;
     } catch (e) {
       _errorMessage.value = 'Failed to load sales: $e';
-      print('Error loading uplift sales: $e');
     } finally {
       _isLoading.value = false;
     }
@@ -367,4 +366,3 @@ class _UpliftSalesPageState extends State<UpliftSalesPage> {
     );
   }
 }
-

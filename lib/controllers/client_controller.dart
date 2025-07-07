@@ -39,7 +39,6 @@ class ClientController extends GetxController {
       clients.value = result.items;
       hasMore.value = result.hasMore;
     } catch (e) {
-      print('Error loading initial data: $e');
       Get.snackbar(
         'Error',
         'Failed to load clients. Please try again.',
@@ -69,7 +68,6 @@ class ClientController extends GetxController {
       clients.addAll(result.items);
       hasMore.value = result.hasMore;
     } catch (e) {
-      print('Error loading more data: $e');
       currentPage.value--; // Revert page number on error
       Get.snackbar(
         'Error',

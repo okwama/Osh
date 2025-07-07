@@ -19,7 +19,6 @@ class ErrorIconHelper {
       await rootBundle.load(oops500SvgPath);
       return true;
     } catch (e) {
-      debugPrint('Error icon not found: $e');
       return false;
     }
   }

@@ -80,7 +80,6 @@ class ProductReturnService {
         rethrow;
       }
     } catch (e) {
-      print('❌ Error submitting product return report: $e');
       rethrow;
     }
   }
@@ -123,7 +122,6 @@ class ProductReturnService {
 
       return reports;
     } catch (e) {
-      print('❌ Error fetching product return reports by status: $e');
       rethrow;
     }
   }
@@ -141,7 +139,6 @@ class ProductReturnService {
 
       await _db.query(sql, [status, reportId]);
     } catch (e) {
-      print('❌ Error updating product return status: $e');
       rethrow;
     }
   }

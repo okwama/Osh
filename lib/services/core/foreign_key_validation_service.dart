@@ -12,7 +12,6 @@ class ForeignKeyValidationService {
       final result = await _db.query(sql, [userId]);
       return (result.first.fields['count'] ?? 0) > 0;
     } catch (e) {
-      print('❌ Error validating user ID $userId: $e');
       return false;
     }
   }
@@ -24,7 +23,6 @@ class ForeignKeyValidationService {
       final result = await _db.query(sql, [clientId]);
       return (result.first.fields['count'] ?? 0) > 0;
     } catch (e) {
-      print('❌ Error validating client ID $clientId: $e');
       return false;
     }
   }
@@ -36,7 +34,6 @@ class ForeignKeyValidationService {
       final result = await _db.query(sql, [journeyPlanId]);
       return (result.first.fields['count'] ?? 0) > 0;
     } catch (e) {
-      print('❌ Error validating journey plan ID $journeyPlanId: $e');
       return false;
     }
   }
@@ -48,7 +45,6 @@ class ForeignKeyValidationService {
       final result = await _db.query(sql, [productId]);
       return (result.first.fields['count'] ?? 0) > 0;
     } catch (e) {
-      print('❌ Error validating product ID $productId: $e');
       return false;
     }
   }
@@ -60,7 +56,6 @@ class ForeignKeyValidationService {
       final result = await _db.query(sql, [storeId]);
       return (result.first.fields['count'] ?? 0) > 0;
     } catch (e) {
-      print('❌ Error validating store ID $storeId: $e');
       return false;
     }
   }
@@ -72,7 +67,6 @@ class ForeignKeyValidationService {
       final result = await _db.query(sql, [routeId]);
       return (result.first.fields['count'] ?? 0) > 0;
     } catch (e) {
-      print('❌ Error validating route ID $routeId: $e');
       return false;
     }
   }
@@ -84,7 +78,6 @@ class ForeignKeyValidationService {
       final result = await _db.query(sql, [regionId]);
       return (result.first.fields['count'] ?? 0) > 0;
     } catch (e) {
-      print('❌ Error validating region ID $regionId: $e');
       return false;
     }
   }
@@ -96,7 +89,6 @@ class ForeignKeyValidationService {
       final result = await _db.query(sql, [countryId]);
       return (result.first.fields['count'] ?? 0) > 0;
     } catch (e) {
-      print('❌ Error validating country ID $countryId: $e');
       return false;
     }
   }
@@ -212,7 +204,6 @@ class ForeignKeyValidationService {
 
       return userId;
     } catch (e) {
-      print('❌ Error getting validated current user ID: $e');
       rethrow;
     }
   }

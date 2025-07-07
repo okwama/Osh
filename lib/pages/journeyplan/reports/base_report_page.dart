@@ -39,7 +39,6 @@ mixin BaseReportPageMixin<T extends StatefulWidget> on State<T> {
     try {
       // This method is now handled by individual report services
       // The specific report submission logic is implemented in each report page
-      print('Report submission handled by individual services');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -165,12 +164,10 @@ mixin BaseReportPageMixin<T extends StatefulWidget> on State<T> {
         );
         latitude = position.latitude;
         longitude = position.longitude;
-        print('📍 GPS acquired: $latitude, $longitude');
       } catch (e) {
         // Quick fallback to client location
         latitude = journeyPlan.client.latitude ?? 0.0;
         longitude = journeyPlan.client.longitude ?? 0.0;
-        print('⚠️ Using client location: $latitude, $longitude');
       }
 
       // Essential data update only
@@ -268,4 +265,3 @@ class _BaseReportPageState extends State<BaseReportPage>
     // Base implementation does nothing
   }
 }
-

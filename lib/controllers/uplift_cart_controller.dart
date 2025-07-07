@@ -81,7 +81,6 @@ class UpliftCartController extends GetxController {
       // For uplift sales, we use the simple calculation since prices are manually entered
       return totalAmount;
     } catch (e) {
-      print('Error in price calculation: $e');
       return totalAmount; // Fallback to simple calculation
     }
   }

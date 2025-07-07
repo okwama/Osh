@@ -119,7 +119,6 @@ class RouteService {
 
       return results.map((row) => Route.fromJson(row.fields)).toList();
     } catch (e) {
-      print('❌ Error fetching routes: $e');
       rethrow;
     }
   }
@@ -130,15 +129,12 @@ class RouteService {
       final currentUser = await _db.getCurrentUserDetails();
       final countryId = currentUser['countryId'];
 
-      print('📍 Current user country ID: $countryId');
 
       final routes = await getRoutes(countryId: countryId);
 
-      print('📍 Found ${routes.length} routes for country ID: $countryId');
 
       return routes;
     } catch (e) {
-      print('❌ Error fetching routes for current user: $e');
       // Return empty list if there's an error
       return [];
     }
@@ -169,7 +165,6 @@ class RouteService {
       }
       return null;
     } catch (e) {
-      print('❌ Error fetching route by ID: $e');
       rethrow;
     }
   }
@@ -197,7 +192,6 @@ class RouteService {
 
       return results.map((row) => Route.fromJson(row.fields)).toList();
     } catch (e) {
-      print('❌ Error fetching routes by region: $e');
       rethrow;
     }
   }
@@ -208,15 +202,12 @@ class RouteService {
       final currentUser = await _db.getCurrentUserDetails();
       final regionId = currentUser['region_id'];
 
-      print('📍 Current user region ID: $regionId');
 
       final routes = await getRoutesByRegion(regionId);
 
-      print('📍 Found ${routes.length} routes for region ID: $regionId');
 
       return routes;
     } catch (e) {
-      print('❌ Error fetching routes for current user region: $e');
       // Return empty list if there's an error
       return [];
     }
@@ -229,7 +220,6 @@ class RouteService {
       final countryId = currentUser['countryId'];
 
       if (countryId == null) {
-        print('❌ User countryId is null');
         return [];
       }
 
@@ -265,7 +255,6 @@ class RouteService {
           '✅ Cached ${routeOptions.length} route options for country $countryId (including global routes)');
       return routeOptions;
     } catch (e) {
-      print('❌ Error fetching cached route options: $e');
       return [];
     }
   }
@@ -295,7 +284,6 @@ class RouteService {
   static void clearCache() {
     _routeOptionsCache.clear();
     _cacheTimestamp.clear();
-    print('🗑️ Route cache cleared');
   }
 
   /// Clear cache immediately to apply new filtering logic
@@ -309,7 +297,6 @@ class RouteService {
   static void clearCacheForCountry(int countryId) {
     _routeOptionsCache.remove(countryId);
     _cacheTimestamp.remove(countryId);
-    print('🗑️ Route cache cleared for country $countryId');
   }
 
   /// Get cache status for debugging

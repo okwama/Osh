@@ -137,8 +137,6 @@ class JourneyPlan {
 
   factory JourneyPlan.fromJson(Map<String, dynamic> json) {
     // Debug logging to identify the issue
-    print('JourneyPlan.fromJson - Processing JSON: ${json.keys.join(', ')}');
-    print('JourneyPlan.fromJson - Date field: ${json['date']}');
     print(
         'JourneyPlan.fromJson - Client field present: ${json['client'] != null}');
 
@@ -159,7 +157,6 @@ class JourneyPlan {
         try {
           return double.parse(value);
         } catch (e) {
-          print('parseDouble error for value "$value": $e');
           return null;
         }
       }
@@ -201,8 +198,6 @@ class JourneyPlan {
     final time = json['time'] ?? getTime(date);
 
     // Debug date and time parsing
-    print('JourneyPlan parsing - date: ${json['date']} -> $date');
-    print('JourneyPlan parsing - time: ${json['time']} -> $time');
 
     // Convert status to int, default to pending (0)
     final status = json['status'] != null
@@ -212,8 +207,6 @@ class JourneyPlan {
         : statusPending;
 
     // Debug status parsing
-    print('JourneyPlan parsing - status: ${json['status']} -> $status');
-    print('JourneyPlan parsing - statusText: ${json['statusText']}');
 
     // Debug logging for each field
     final id = parseInt(json['id']);
@@ -226,17 +219,12 @@ class JourneyPlan {
     final checkoutLatitude = parseDouble(json['checkoutLatitude']);
     final checkoutLongitude = parseDouble(json['checkoutLongitude']);
 
-    print('JourneyPlan parsing - id: ${json['id']} -> $id');
     print(
         'JourneyPlan parsing - userId/salesRepId: ${json['userId'] ?? json['salesRepId']} -> $salesRepId');
-    print('JourneyPlan parsing - routeId: ${json['routeId']} -> $routeId');
-    print('JourneyPlan parsing - clientId: ${json['clientId']} -> $clientId');
-    print('JourneyPlan parsing - latitude: ${json['latitude']} -> $latitude');
     print(
         'JourneyPlan parsing - longitude: ${json['longitude']} -> $longitude');
 
     // Debug client parsing
-    print('JourneyPlan parsing - client: ${json['client']}');
 
     return JourneyPlan(
       id: id,

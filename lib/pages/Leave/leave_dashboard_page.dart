@@ -45,12 +45,6 @@ class _LeaveDashboardPageState extends State<LeaveDashboardPage> {
     final userData = box.read('salesRep');
     final token = box.read('authToken');
 
-    print('🔍 Auth Debug Info:');
-    print('   User ID exists: ${userId != null}');
-    print('   User data exists: ${userData != null}');
-    print('   Token exists: ${token != null}');
-    print('   Direct storage user ID: $userId');
-    print('   User data ID: ${userData?['id']}');
   }
 
   Future<void> _loadDashboardData() async {
@@ -75,8 +69,6 @@ class _LeaveDashboardPageState extends State<LeaveDashboardPage> {
         }
       }
 
-      print('🔍 Debug: User ID from storage: $userId');
-      print('🔍 Debug: Staff ID resolved: $staffId');
 
       if (staffId == null || staffId == 0) {
         setState(() {
@@ -86,7 +78,6 @@ class _LeaveDashboardPageState extends State<LeaveDashboardPage> {
         return;
       }
 
-      print('✅ Loading leave dashboard for staff ID: $staffId');
 
       // First sync the leave balances to ensure accuracy
       await LeaveBalanceService.syncLeaveBalances(staffId, _currentYear);
@@ -94,7 +85,6 @@ class _LeaveDashboardPageState extends State<LeaveDashboardPage> {
       final results = await Future.wait([
         LeaveBalanceService.getStaffLeaveBalances(staffId, _currentYear)
             .then((balances) {
-          print('🔍 Debug: Loaded ${balances.length} leave balances');
           for (final balance in balances) {
             print(
                 '   - ${balance.leaveType?.name}: ${balance.accrued} accrued, ${balance.used} used');
@@ -118,7 +108,6 @@ class _LeaveDashboardPageState extends State<LeaveDashboardPage> {
       print(
           '✅ Dashboard loaded: ${_leaveBalances.length} balances, ${_leaveStats.length} stats');
     } catch (e) {
-      print('❌ Error in _loadDashboardData: $e');
       setState(() {
         _error = 'Failed to load dashboard data: $e';
         _isLoading = false;

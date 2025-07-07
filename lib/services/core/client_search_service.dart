@@ -20,27 +20,22 @@ class ClientSearchService {
     required bool hasMore,
   }) async {
     try {
-      print('🔍 Starting search for: "$query"');
 
       // Get current user's country ID for filtering
       final currentUser = await _db.getCurrentUserDetails();
       final countryId = currentUser['countryId'];
 
-      print('📍 Searching clients for country ID: $countryId');
 
       // Always search through existing outlets first
       final searchTerms = query.toLowerCase().split(' ');
       bool foundMatch = _hasMatch(existingOutlets, searchTerms);
       
-      print('🔍 Checking existing ${existingOutlets.length} outlets for match...');
       if (foundMatch) {
-        print('✅ Found match in existing outlets');
         return existingOutlets;
       }
 
       // If no match found in existing outlets and there are more pages, load more
       if (query.isNotEmpty && hasMore) {
-        print('📄 No match in existing outlets, loading more pages...');
         return await _loadMoreUntilFound(
           query: query,
           currentPage: currentPage,
@@ -51,10 +46,8 @@ class ClientSearchService {
       }
 
       // If no more pages and no match found, return existing outlets
-      print('⚠️ No match found in existing outlets and no more pages available');
       return existingOutlets;
     } catch (e) {
-      print('❌ Error in searchClients: $e');
       rethrow;
     }
   }
@@ -75,15 +68,12 @@ class ClientSearchService {
     // Check if we already have a match in existing outlets
     bool foundMatch = _hasMatch(allOutlets, searchTerms);
 
-    print('🔍 Checking existing ${allOutlets.length} outlets for match...');
     if (foundMatch) {
-      print('✅ Found match in existing outlets');
       return allOutlets;
     }
 
     // Load more pages until we find a match or reach the end
     while (!foundMatch && hasMore) {
-      print('📄 Loading page ${page + 1} to search for: "$query"');
 
       try {
         final result = await _paginationService.fetchOffset(
@@ -136,16 +126,13 @@ class ClientSearchService {
         foundMatch = _hasMatch(newOutlets, searchTerms);
 
         if (foundMatch) {
-          print('✅ Found match in newly loaded outlets');
         }
 
         // Limit the search to prevent infinite loading
         if (page > 10) {
-          print('⚠️ Reached maximum search pages (10), stopping search');
           break;
         }
       } catch (e) {
-        print('❌ Error loading more clients for search: $e');
         break;
       }
     }

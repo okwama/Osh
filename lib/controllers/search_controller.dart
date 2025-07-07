@@ -82,12 +82,10 @@ class SearchController extends ChangeNotifier {
       _hasMoreResults = result.hasMore;
       _errorMessage = null;
 
-      print('🔍 Search completed: ${result.items.length} results found');
     } catch (e) {
       _errorMessage = 'Search failed: ${e.toString()}';
       _searchResults = [];
       _hasMoreResults = false;
-      print('❌ Search error: $e');
     } finally {
       _setSearching(false);
     }
@@ -115,10 +113,8 @@ class SearchController extends ChangeNotifier {
       _currentPage++;
       _errorMessage = null;
 
-      print('📄 Loaded more results: ${result.items.length} additional items');
     } catch (e) {
       _errorMessage = 'Failed to load more results: ${e.toString()}';
-      print('❌ Load more error: $e');
     } finally {
       _setSearching(false);
     }
@@ -146,12 +142,10 @@ class SearchController extends ChangeNotifier {
       _hasMoreResults = result.hasMore;
       _errorMessage = null;
 
-      print('🔍 Field search completed: ${result.items.length} results found');
     } catch (e) {
       _errorMessage = 'Field search failed: ${e.toString()}';
       _searchResults = [];
       _hasMoreResults = false;
-      print('❌ Field search error: $e');
     } finally {
       _setSearching(false);
     }
@@ -185,7 +179,6 @@ class SearchController extends ChangeNotifier {
       _errorMessage = 'Location search failed: ${e.toString()}';
       _searchResults = [];
       _hasMoreResults = false;
-      print('❌ Location search error: $e');
     } finally {
       _setSearching(false);
     }
@@ -209,10 +202,8 @@ class SearchController extends ChangeNotifier {
       );
 
       _suggestions = suggestions;
-      print('💡 Loaded ${suggestions.length} search suggestions');
     } catch (e) {
       _suggestions = [];
-      print('❌ Failed to load suggestions: $e');
     } finally {
       _isLoadingSuggestions = false;
       notifyListeners();
@@ -232,7 +223,6 @@ class SearchController extends ChangeNotifier {
     try {
       return await _searchService.getSearchStats(query: _currentQuery);
     } catch (e) {
-      print('❌ Failed to get search stats: $e');
       return {
         'totalResults': 0,
         'searchTerms': [],

@@ -57,13 +57,11 @@ void main() async {
 
   try {
     // ✅ CENTRALIZED DATABASE INITIALIZATION
-    print('🔄 Initializing database service...');
     await Get.putAsync(() async {
       final db = DatabaseService.instance;
       await db.initialize();
       return db;
     });
-    print('✅ Database service initialized successfully');
 
     await GetStorage.init();
     // Initialize Hive with all adapters
@@ -86,7 +84,6 @@ void main() async {
 
     runApp(MyApp());
   } catch (e) {
-    print('❌ Error initializing services: $e');
     // Continue with app launch even if some services fail
   }
 }
@@ -102,9 +99,7 @@ void _initializeServicesInBackground() {
       // Initialize fast stock service
       await StockService.instance.initialize();
 
-      print('✅ Background services initialized successfully');
     } catch (e) {
-      print('❌ Error initializing background services: $e');
     }
   });
 }
@@ -112,11 +107,9 @@ void _initializeServicesInBackground() {
 /// Initialize product stock cache on app startup
 Future<void> _initializeProductStockCache() async {
   try {
-    print('🚀 Initializing product stock cache...');
 
     // Check if user is authenticated
     if (!TokenService.isAuthenticated()) {
-      print('⚠️ User not authenticated, skipping stock cache initialization');
       return;
     }
 
@@ -125,7 +118,6 @@ Future<void> _initializeProductStockCache() async {
     final isConnected = connectivityResult != ConnectivityResult.none;
 
     if (!isConnected) {
-      print('⚠️ No internet connection, skipping stock cache initialization');
       return;
     }
 
@@ -140,11 +132,9 @@ Future<void> _initializeProductStockCache() async {
         DateTime.now().difference(lastUpdate).inMinutes < 10;
 
     if (isCacheFresh) {
-      print('✅ Product stock cache is fresh, skipping initialization');
       return;
     }
 
-    print('📦 Fetching product stock data...');
 
     // Fetch all products with stock data
     final products = await ProductService.getProducts(
@@ -164,10 +154,8 @@ Future<void> _initializeProductStockCache() async {
       // Process stock statistics in background
       _processStockStatistics(products);
     } else {
-      print('⚠️ No products found to cache');
     }
   } catch (e) {
-    print('❌ Error initializing product stock cache: $e');
     // Don't fail app startup if stock cache fails
   }
 }
@@ -175,13 +163,7 @@ Future<void> _initializeProductStockCache() async {
 /// Process stock statistics in background to avoid blocking UI
 void _processStockStatistics(List<dynamic> products) {
   compute(calculateStockStatistics, products).then((stats) {
-    print('📊 Stock Statistics:');
-    print('   - Total products: ${stats['totalProducts']}');
-    print('   - Products in stock: ${stats['productsInStock']}');
-    print('   - Products out of stock: ${stats['productsOutOfStock']}');
-    print('   - Total stock units: ${stats['totalStock']}');
   }).catchError((e) {
-    print('❌ Error calculating stock statistics: $e');
   });
 }
 

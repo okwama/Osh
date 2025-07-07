@@ -10,7 +10,6 @@ class LeaveStatusService {
   static Future<Map<String, dynamic>> checkAndUpdateLeaveStatus(
       int leaveRequestId) async {
     try {
-      print('🔍 Checking leave status for request ID: $leaveRequestId');
 
       // Get leave request details
       const getRequestSql = '''
@@ -39,16 +38,9 @@ class LeaveStatusService {
       final endDate = DateTime.parse(requestData['end_date']);
       final isHalfDay = requestData['is_half_day'] == 1;
 
-      print('📊 Leave request details:');
-      print('   - Status: $status');
-      print('   - Employee: $employeeId');
-      print('   - Leave Type: $leaveTypeId');
-      print('   - Start: $startDate, End: $endDate');
-      print('   - Half Day: $isHalfDay');
 
       // If status is approved, update balance
       if (status == 'approved') {
-        print('✅ Leave is approved - updating balance');
 
         final balanceResult = await LeaveBalanceService.updateBalanceOnApproval(
           employeeTypeId: employeeTypeId,
@@ -84,7 +76,6 @@ class LeaveStatusService {
         };
       }
     } catch (e) {
-      print('❌ Check leave status error: $e');
       return {
         'success': false,
         'message': 'Failed to check leave status: $e',
@@ -132,7 +123,6 @@ class LeaveStatusService {
         },
       };
     } catch (e) {
-      print('❌ Get leave status error: $e');
       return {
         'success': false,
         'message': 'Failed to get leave status: $e',
@@ -192,7 +182,6 @@ class LeaveStatusService {
         );
       }).toList();
     } catch (e) {
-      print('❌ Get leave requests with status error: $e');
       rethrow;
     }
   }
@@ -200,7 +189,6 @@ class LeaveStatusService {
   /// Monitor leave status changes and update balances automatically
   static Future<void> monitorLeaveStatusChanges() async {
     try {
-      print('🔍 Monitoring leave status changes...');
 
       // Get all leave requests that might need balance updates
       const sql = '''
@@ -237,7 +225,6 @@ class LeaveStatusService {
         }
       }
     } catch (e) {
-      print('❌ Monitor leave status changes error: $e');
     }
   }
 

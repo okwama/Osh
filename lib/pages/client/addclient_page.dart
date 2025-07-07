@@ -53,7 +53,6 @@ class _AddClientPageState extends State<AddClientPage> {
       print(
           '📍 Loaded user data - Country ID: $_countryId, Region: $_region, Region ID: $_regionId');
     } else {
-      print('⚠️ No salesRep data found in GetStorage');
     }
   }
 
@@ -79,7 +78,6 @@ class _AddClientPageState extends State<AddClientPage> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          print('Location permissions denied');
           return;
         }
       }
@@ -87,7 +85,6 @@ class _AddClientPageState extends State<AddClientPage> {
       // Check if services are enabled
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        print('Location services disabled');
         return;
       }
 
@@ -102,10 +99,8 @@ class _AddClientPageState extends State<AddClientPage> {
           _currentPosition = position;
           _isLocationLoading = false;
         });
-        print('Got position: ${position.latitude}, ${position.longitude}');
       }
     } catch (e) {
-      print('Error getting location: $e');
       if (mounted) {
         setState(() {
           _isLocationLoading = false;
@@ -165,7 +160,6 @@ class _AddClientPageState extends State<AddClientPage> {
               e.toString().contains('501') ||
               e.toString().contains('502') ||
               e.toString().contains('503')) {
-            print('Server error during client creation - handled silently: $e');
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(

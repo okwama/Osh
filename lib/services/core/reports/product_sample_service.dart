@@ -76,7 +76,6 @@ class ProductSampleService {
         // Commit transaction
         await _db.query('COMMIT');
 
-        print('✅ ProductSampleReport submitted successfully');
 
         // Return simple success report without fetching from database
         return Report(
@@ -108,11 +107,9 @@ class ProductSampleService {
       } catch (e) {
         // Rollback transaction
         await _db.query('ROLLBACK');
-        print('❌ Transaction rolled back due to error: $e');
         rethrow;
       }
     } catch (e) {
-      print('❌ Error submitting product sample report: $e');
       rethrow;
     }
   }
@@ -133,10 +130,8 @@ class ProductSampleService {
       ''';
 
       final result = await _db.query(sql, [status, reportId, filterUserId]);
-      print('✅ ProductSample status updated successfully');
       return result.affectedRows! > 0;
     } catch (e) {
-      print('❌ Error updating product sample status: $e');
       return false;
     }
   }
@@ -160,10 +155,8 @@ class ProductSampleService {
 
       final result = await _db.query(
           sql, [quantity, reason, productsSampleId, productName, filterUserId]);
-      print('✅ ProductSampleItem updated successfully');
       return result.affectedRows! > 0;
     } catch (e) {
-      print('❌ Error updating product sample item: $e');
       return false;
     }
   }

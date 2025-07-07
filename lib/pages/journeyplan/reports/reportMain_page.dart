@@ -86,7 +86,6 @@ class _ReportsOrdersPageState extends State<ReportsOrdersPage> {
         _isLoading = false;
       });
     } catch (e) {
-      print('Error loading existing reports: $e');
       setState(() => _isLoading = false);
     }
   }
@@ -717,8 +716,6 @@ class _ReportsOrdersPageState extends State<ReportsOrdersPage> {
 
     try {
       // Get current position with timeout and fallback
-      print('CHECKOUT: Starting checkout process...');
-      print('CHECKOUT: Getting current position...');
 
       Position? position;
       try {
@@ -729,7 +726,6 @@ class _ReportsOrdersPageState extends State<ReportsOrdersPage> {
         );
         print(
             'CHECKOUT: GPS position obtained: ${position.latitude}, ${position.longitude}');
-        print('CHECKOUT: Accuracy: ${position.accuracy} meters');
       } catch (gpsError) {
         print(
             'CHECKOUT: GPS timeout/error, trying last known position: $gpsError');
@@ -741,7 +737,6 @@ class _ReportsOrdersPageState extends State<ReportsOrdersPage> {
             print(
                 'CHECKOUT: Using last known position: ${position.latitude}, ${position.longitude}');
           } else {
-            print('CHECKOUT: No last known position, using client coordinates');
             // Use client coordinates as final fallback
             position = Position(
               latitude: widget.journeyPlan.client.latitude ?? 0.0,
@@ -777,13 +772,8 @@ class _ReportsOrdersPageState extends State<ReportsOrdersPage> {
 
       print(
           'CHECKOUT: Final position: ${position.latitude}, ${position.longitude}');
-      print('CHECKOUT: Accuracy: ${position.accuracy} meters');
-      print('CHECKOUT: Timestamp: ${DateTime.now().toIso8601String()}');
-      print('CHECKOUT: Journey ID: ${widget.journeyPlan.id}');
-      print('CHECKOUT: Client ID: ${widget.journeyPlan.client.id}');
 
       // Update journey plan with checkout information
-      print('CHECKOUT: Sending data to API...');
       final response = await JourneyPlanService.updateJourneyPlan(
         journeyId: widget.journeyPlan.id!,
         clientId: widget.journeyPlan.client.id,
@@ -793,12 +783,6 @@ class _ReportsOrdersPageState extends State<ReportsOrdersPage> {
         checkoutLongitude: position.longitude,
       );
 
-      print('CHECKOUT: API response received:');
-      print('CHECKOUT: Updated Journey Plan ID: ${response.id}');
-      print('CHECKOUT: New Status: ${response.statusText}');
-      print('CHECKOUT: Checkout Time: ${response.checkoutTime}');
-      print('CHECKOUT: Checkout Latitude: ${response.checkoutLatitude}');
-      print('CHECKOUT: Checkout Longitude: ${response.checkoutLongitude}');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -815,7 +799,6 @@ class _ReportsOrdersPageState extends State<ReportsOrdersPage> {
         Get.back();
       }
     } catch (e) {
-      print('CHECKOUT ERROR: ${e.toString()}');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

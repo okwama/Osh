@@ -27,7 +27,6 @@ class LeaveService {
         );
       }).toList();
     } catch (e) {
-      print('❌ Get leave types error: $e');
       rethrow;
     }
   }
@@ -53,7 +52,6 @@ class LeaveService {
 
       return null;
     } catch (e) {
-      print('❌ Error getting current user ID: $e');
       return null;
     }
   }
@@ -73,7 +71,6 @@ class LeaveService {
         throw Exception('User not authenticated. Please login again.');
       }
 
-      print('🔍 Submitting leave application for user ID: $salesRepId');
 
       // Get leave type details in a single query
       final leaveTypeDetails = await _getLeaveTypeDetails(leaveType);
@@ -134,7 +131,6 @@ class LeaveService {
         updatedAt: DateTime.now(),
       );
     } catch (e) {
-      print('❌ Submit leave application error: $e');
       rethrow;
     }
   }
@@ -181,7 +177,6 @@ class LeaveService {
 
       return result.insertId != null;
     } catch (e) {
-      print('❌ Create leave application error: $e');
       return false;
     }
   }
@@ -225,7 +220,6 @@ class LeaveService {
         );
       }).toList();
     } catch (e) {
-      print('❌ Get user leaves error: $e');
       rethrow;
     }
   }
@@ -282,7 +276,6 @@ class LeaveService {
         );
       }).toList();
     } catch (e) {
-      print('❌ Get staff leaves error: $e');
       rethrow;
     }
   }
@@ -329,7 +322,6 @@ class LeaveService {
 
       return balances;
     } catch (e) {
-      print('❌ Get leave balance error: $e');
       rethrow;
     }
   }
@@ -373,7 +365,6 @@ class LeaveService {
         'total_days_approved': 0.0,
       };
     } catch (e) {
-      print('❌ Get leave stats error: $e');
       rethrow;
     }
   }
@@ -396,7 +387,6 @@ class LeaveService {
       }
       return null;
     } catch (e) {
-      print('❌ Get leave type details error: $e');
       return null;
     }
   }

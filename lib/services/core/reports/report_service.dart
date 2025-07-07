@@ -75,7 +75,6 @@ class ReportService {
 
       return results.map((row) => _mapToSimpleReport(row.fields)).toList();
     } catch (e) {
-      print('❌ Error fetching reports: $e');
       rethrow;
     }
   }
@@ -102,7 +101,6 @@ class ReportService {
       }
       return null;
     } catch (e) {
-      print('❌ Error fetching report by ID: $e');
       rethrow;
     }
   }
@@ -134,7 +132,6 @@ class ReportService {
       final result = await _db.query(sql, [status, reportId]);
       return result.affectedRows! > 0;
     } catch (e) {
-      print('❌ Error updating report status: $e');
       return false;
     }
   }
@@ -146,7 +143,6 @@ class ReportService {
       final result = await _db.query(sql, [reportId]);
       return result.affectedRows! > 0;
     } catch (e) {
-      print('❌ Error deleting report: $e');
       return false;
     }
   }

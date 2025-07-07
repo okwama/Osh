@@ -72,7 +72,6 @@ class SearchService {
         queryDuration: result.queryDuration,
       );
     } catch (e) {
-      print('❌ Error searching clients: $e');
       rethrow;
     }
   }
@@ -130,7 +129,6 @@ class SearchService {
         queryDuration: result.queryDuration,
       );
     } catch (e) {
-      print('❌ Error searching clients by field: $e');
       rethrow;
     }
   }
@@ -189,7 +187,6 @@ class SearchService {
         queryDuration: result.queryDuration,
       );
     } catch (e) {
-      print('❌ Error searching clients near location: $e');
       rethrow;
     }
   }
@@ -239,7 +236,6 @@ class SearchService {
 
       return suggestions.take(limit).toList();
     } catch (e) {
-      print('❌ Error getting search suggestions: $e');
       return [];
     }
   }
@@ -299,7 +295,6 @@ class SearchService {
         'queryDuration': Duration.zero, // Could be enhanced with actual timing
       };
     } catch (e) {
-      print('❌ Error getting search stats: $e');
       return {
         'totalResults': 0,
         'searchTerms': [],
@@ -311,6 +306,5 @@ class SearchService {
   /// Clear search cache (if implemented)
   Future<void> clearSearchCache() async {
     // Implementation for search result caching could be added here
-    print('🔍 Search cache cleared');
   }
 }

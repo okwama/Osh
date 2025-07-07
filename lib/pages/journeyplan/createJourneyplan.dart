@@ -159,7 +159,6 @@ class _CreateJourneyPlanPageState extends State<CreateJourneyPlanPage> {
         });
       }
     } catch (e) {
-      print('❌ Failed to initialize routes: $e');
       // Fallback: Try to get user's current route info
       try {
         final currentUser = await _db.getCurrentUserDetails();
@@ -171,7 +170,6 @@ class _CreateJourneyPlanPageState extends State<CreateJourneyPlanPage> {
           });
         }
       } catch (fallbackError) {
-        print('❌ Fallback route initialization failed: $fallbackError');
       }
     } finally {
       if (mounted) {
@@ -194,7 +192,6 @@ class _CreateJourneyPlanPageState extends State<CreateJourneyPlanPage> {
       final currentUser = await _db.getCurrentUserDetails();
       final countryId = currentUser['countryId'];
 
-      print('📍 Fetching clients for country ID: $countryId');
 
       // Use the SAME working method as viewclient_page.dart
       final result = await _paginationService.fetchOffset(
@@ -238,7 +235,6 @@ class _CreateJourneyPlanPageState extends State<CreateJourneyPlanPage> {
               ))
           .toList();
 
-      print('📍 Fetched ${clients.length} clients for country ID: $countryId');
 
       if (mounted) {
         setState(() {
@@ -249,7 +245,6 @@ class _CreateJourneyPlanPageState extends State<CreateJourneyPlanPage> {
         });
       }
     } catch (e) {
-      print('❌ Failed to initialize clients: $e');
       // Fallback to passed clients if database fetch fails
       if (mounted) {
         setState(() {
@@ -340,7 +335,6 @@ class _CreateJourneyPlanPageState extends State<CreateJourneyPlanPage> {
 
       print(
           '📍 Fetched ${clients.length} more clients for country ID: $countryId');
-      print('📍 Has more data: ${result.hasMore}');
 
       if (mounted) {
         if (clients.isEmpty) {
@@ -361,7 +355,6 @@ class _CreateJourneyPlanPageState extends State<CreateJourneyPlanPage> {
         }
       }
     } catch (e) {
-      print('❌ Failed to load more clients: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -428,7 +421,6 @@ class _CreateJourneyPlanPageState extends State<CreateJourneyPlanPage> {
               ))
           .toList();
 
-      print('✅ Refreshed ${clients.length} clients for country $countryId');
 
       setState(() {
         _allClients = clients;
@@ -437,7 +429,6 @@ class _CreateJourneyPlanPageState extends State<CreateJourneyPlanPage> {
       });
     } catch (e) {
       // Silent fail for all refresh errors
-      print('❌ Failed to refresh clients: $e');
     }
   }
 
@@ -707,7 +698,6 @@ class _CreateJourneyPlanPageState extends State<CreateJourneyPlanPage> {
         }
       }
     } catch (e) {
-      print('❌ Failed to create journey plan: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1284,4 +1274,3 @@ class _CreateJourneyPlanPageState extends State<CreateJourneyPlanPage> {
     );
   }
 }
-

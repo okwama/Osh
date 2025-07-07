@@ -109,7 +109,6 @@ class _UserStatsPageState extends State<UserStatsPage> {
         };
       }
     } catch (e) {
-      print('Error precaching data: $e');
     }
   }
 
@@ -313,7 +312,6 @@ class _UserStatsPageState extends State<UserStatsPage> {
             '?startDate=${dateRange['start']}&endDate=${dateRange['end']}';
       }
 
-      print('Fetching stats for user $_userId with params: $urlParams');
 
       // Clear cache for this specific key
       final cacheKey = '${_userId}_$urlParams';
@@ -383,12 +381,9 @@ class _UserStatsPageState extends State<UserStatsPage> {
           'completionRate': '0%'
         };
 
-        print('Raw Login Hours Data: ${json.encode(loginData)}');
-        print('Raw Journey Visits Data: ${json.encode(journeyData)}');
 
         // Validate and process the data
         if (_isValidData(loginData) && _isValidJourneyData(journeyData)) {
-          print('Data validation passed');
 
           // Cache the data
           _cache[cacheKey] = {
@@ -405,31 +400,14 @@ class _UserStatsPageState extends State<UserStatsPage> {
 
           // Print processed data
           final stats = _getFilteredStats();
-          print('Processed Stats:');
-          print('Formatted Duration: ${stats['formattedDuration']}');
-          print('Total Hours: ${stats['totalHours']}');
-          print('Total Minutes: ${stats['totalMinutes']}');
-          print('Session Count: ${stats['sessionCount']}');
-          print('Average Session Duration: ${stats['averageSessionDuration']}');
-          print('Total Plans: ${stats['totalPlans']}');
-          print('Completed Visits: ${stats['completedVisits']}');
-          print('Pending Visits: ${stats['pendingVisits']}');
-          print('Missed Visits: ${stats['missedVisits']}');
-          print('Completion Rate: ${stats['completionRate']}');
-          print('Client Visits: ${json.encode(stats['clientVisits'])}');
         } else {
-          print('Data validation failed');
-          print('Login Data Valid: ${_isValidData(loginData)}');
-          print('Journey Data Valid: ${_isValidJourneyData(journeyData)}');
           throw Exception('Invalid data format received from server');
         }
       } else {
         final errorMessage = 'Failed to load journey data from services';
-        print('Error: $errorMessage');
         throw Exception(errorMessage);
       }
     } catch (e) {
-      print('Exception caught: $e');
       setState(() {
         _error = e.toString();
         _isLoading = false;
@@ -449,29 +427,24 @@ class _UserStatsPageState extends State<UserStatsPage> {
 
     for (final field in requiredFields) {
       if (data[field] == null) {
-        print('Missing required field: $field');
         return false;
       }
     }
 
     // Validate numeric fields
     if (data['totalHours'] is! int) {
-      print('Invalid totalHours type: ${data['totalHours'].runtimeType}');
       return false;
     }
     if (data['totalMinutes'] is! int) {
-      print('Invalid totalMinutes type: ${data['totalMinutes'].runtimeType}');
       return false;
     }
     if (data['sessionCount'] is! int) {
-      print('Invalid sessionCount type: ${data['sessionCount'].runtimeType}');
       return false;
     }
 
     // Validate duration format
     if (data['formattedDuration'] is! String ||
         !RegExp(r'^\d+h \d+m$').hasMatch(data['formattedDuration'])) {
-      print('Invalid formattedDuration: ${data['formattedDuration']}');
       return false;
     }
 
@@ -499,7 +472,6 @@ class _UserStatsPageState extends State<UserStatsPage> {
 
     for (final field in requiredFields) {
       if (data[field] == null) {
-        print('Missing required journey field: $field');
         return false;
       }
     }
@@ -619,7 +591,6 @@ class _UserStatsPageState extends State<UserStatsPage> {
   }
 
   Future<void> _clearCache() async {
-    print('Clearing all cached data');
     _cache.clear();
     setState(() {
       _loginData = null;

@@ -118,7 +118,6 @@ class ClientCacheService {
 
       return filteredClients;
     } catch (e) {
-      print('❌ Error fetching clients: $e');
 
       // Return cached data if available, even if stale
       if (_cachedClientsByCountry[userCountryId] != null) {
@@ -139,14 +138,12 @@ class ClientCacheService {
     int limit = 100,
   }) async {
     final userCountryId = await _getCurrentUserCountryId();
-    print('🔄 Force refreshing client cache for country $userCountryId...');
     return await _fetchAndCacheClients(
         page: page, limit: limit, countryId: userCountryId);
   }
 
   /// Clear the cache
   void clearCache() {
-    print('🗑️ Clearing client cache');
     _cachedClientsByCountry.clear();
     _lastCacheTimeByCountry.clear();
     _isLoadingByCountry.clear();

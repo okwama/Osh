@@ -30,7 +30,6 @@ class FeedbackReportService {
         journeyPlanId: journeyPlanId,
       );
 
-      print('✅ Foreign key validation passed for FeedbackReport submission');
 
       // Start transaction
       await _db.query('START TRANSACTION');
@@ -72,7 +71,6 @@ class FeedbackReportService {
         // Commit transaction
         await _db.query('COMMIT');
 
-        print('✅ FeedbackReport submitted successfully');
 
         // Return simple success report without fetching from database
         return Report(
@@ -104,11 +102,9 @@ class FeedbackReportService {
       } catch (e) {
         // Rollback transaction
         await _db.query('ROLLBACK');
-        print('❌ Transaction rolled back due to error: $e');
         rethrow;
       }
     } catch (e) {
-      print('❌ Error submitting feedback report: $e');
 
       // Provide more specific error messages
       if (e.toString().contains('Foreign key validation failed')) {
@@ -142,10 +138,8 @@ class FeedbackReportService {
       ''';
 
       final result = await _db.query(sql, [comment, reportId, validatedUserId]);
-      print('✅ FeedbackReport updated successfully');
       return result.affectedRows! > 0;
     } catch (e) {
-      print('❌ Error updating feedback report: $e');
       return false;
     }
   }

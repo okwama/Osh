@@ -25,7 +25,6 @@ class ProductService {
     int? countryId,
   }) async {
     try {
-      print('🚀 [ProductService] Starting OPTIMIZED product fetch...');
 
       // Get current user's country configuration if not provided
       CurrencyConfig? userCurrencyConfig;
@@ -38,7 +37,6 @@ class ProductService {
       }
 
       if (userCurrencyConfig == null) {
-        print('⚠️ [ProductService] No currency config found, using default');
         userCurrencyConfig = await CurrencyConfigService.getCurrencyConfig(
             1); // Default to Kenya
       }
@@ -130,7 +128,6 @@ class ProductService {
 
       sql += ' ORDER BY p.name ASC, po.option ASC, sq.quantity DESC';
 
-      print('🔍 [ProductService] Executing OPTIMIZED single query...');
       final startTime = DateTime.now();
       final results = await _db.query(sql, params);
       final queryTime = DateTime.now().difference(startTime).inMilliseconds;
@@ -265,7 +262,6 @@ class ProductService {
 
       return products;
     } catch (e) {
-      print('❌ [ProductService] Error fetching products: $e');
       rethrow;
     }
   }
@@ -350,7 +346,6 @@ class ProductService {
         storeQuantities: storeQuantities,
       );
     } catch (e) {
-      print('❌ [ProductService] Error fetching product by ID: $e');
       rethrow;
     }
   }
@@ -390,7 +385,6 @@ class ProductService {
         );
       }).toList();
     } catch (e) {
-      print('❌ [ProductService] Error fetching price options: $e');
       return [];
     }
   }
@@ -430,7 +424,6 @@ class ProductService {
         );
       }).toList();
     } catch (e) {
-      print('❌ [ProductService] Error fetching store quantities: $e');
       return [];
     }
   }
@@ -550,7 +543,6 @@ class ProductService {
       final results = await _db.query(sql, params);
       return results.first.fields['count'] ?? 0;
     } catch (e) {
-      print('❌ [ProductService] Error getting products count: $e');
       return 0;
     }
   }
@@ -567,7 +559,6 @@ class ProductService {
           return DateTime.parse(value.replaceAll(' ', 'T'));
         }
       } catch (e) {
-        print('Error parsing datetime: $value - $e');
         return DateTime.now();
       }
     }

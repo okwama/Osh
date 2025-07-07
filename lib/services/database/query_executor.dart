@@ -23,7 +23,6 @@ class QueryExecutor {
 
     try {
       connection = await _connectionPool.getConnection();
-      print('📋 Executing query: ${_abbreviateSql(sql)}');
 
       Results? results;
       int retryCount = 0;
@@ -46,7 +45,6 @@ class QueryExecutor {
             rethrow; // Give up after max retries
           }
 
-          print('⚠️ Query timeout, retrying (${retryCount}/$maxRetries): $e');
           await Future.delayed(
               Duration(seconds: retryCount * 2)); // Exponential backoff
         }
@@ -70,8 +68,6 @@ class QueryExecutor {
 
       return results;
     } catch (e) {
-      print('❌ Query execution failed: $e');
-      print('📋 Failed SQL: ${_abbreviateSql(sql)}');
       if (values != null) print('📋 Values: $values');
       rethrow;
     } finally {
@@ -87,23 +83,18 @@ class QueryExecutor {
     MySqlConnection? connection;
     try {
       connection = await _connectionPool.getConnection();
-      print('🔄 Starting database transaction');
 
       await connection.query('START TRANSACTION');
 
       final result = await operation(connection);
 
       await connection.query('COMMIT');
-      print('✅ Transaction committed successfully');
       return result;
     } catch (e) {
-      print('❌ Transaction failed: $e');
       if (connection != null) {
         try {
           await connection.query('ROLLBACK');
-          print('🔄 Transaction rolled back');
         } catch (rollbackError) {
-          print('❌ Rollback failed: $rollbackError');
         }
       }
       rethrow;
@@ -163,7 +154,6 @@ class QueryExecutor {
       final count = await executeCount(sql, [tableName]);
       return count > 0;
     } catch (e) {
-      print('❌ Error checking if table exists: $e');
       return false;
     }
   }
@@ -180,7 +170,6 @@ class QueryExecutor {
 
       return await executeCount(sql, values);
     } catch (e) {
-      print('❌ Error getting table row count: $e');
       return 0;
     }
   }

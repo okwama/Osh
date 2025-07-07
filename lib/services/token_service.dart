@@ -35,7 +35,6 @@ class TokenService {
     try {
       return JwtDecoder.isExpired(token);
     } catch (e) {
-      print('Error checking token expiration: $e');
       return true;
     }
   }
@@ -54,7 +53,6 @@ class TokenService {
     try {
       return JwtDecoder.decode(token);
     } catch (e) {
-      print('Error decoding token: $e');
       return null;
     }
   }

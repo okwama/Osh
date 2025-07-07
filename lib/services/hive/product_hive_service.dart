@@ -31,7 +31,6 @@ class ProductHiveService {
       await _productBox.clear();
       await _productBox.addAll(hiveProducts);
     } catch (e) {
-      print('Error saving products to cache: $e');
     }
   }
 
@@ -40,7 +39,6 @@ class ProductHiveService {
     try {
       return _productBox.values.toList();
     } catch (e) {
-      print('Error getting cached products: $e');
       return [];
     }
   }
@@ -52,7 +50,6 @@ class ProductHiveService {
           .map((hiveProduct) => hiveProduct.toProduct())
           .toList();
     } catch (e) {
-      print('Error getting cached product models: $e');
       return [];
     }
   }
@@ -62,7 +59,6 @@ class ProductHiveService {
     try {
       await _timestampBox.put(_timestampKey, time.millisecondsSinceEpoch);
     } catch (e) {
-      print('Error setting last update time: $e');
     }
   }
 
@@ -75,7 +71,6 @@ class ProductHiveService {
       }
       return null;
     } catch (e) {
-      print('Error getting last update time: $e');
       return null;
     }
   }
@@ -86,7 +81,6 @@ class ProductHiveService {
       await _productBox.clear();
       await _timestampBox.delete(_timestampKey);
     } catch (e) {
-      print('Error clearing cached products: $e');
     }
   }
 
@@ -95,7 +89,6 @@ class ProductHiveService {
     try {
       await _productBox.close();
     } catch (e) {
-      print('Error closing product box: $e');
     }
   }
 }

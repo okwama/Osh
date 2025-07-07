@@ -55,7 +55,6 @@ class StoreService {
         );
       }).toList();
     } catch (e) {
-      print('❌ [StoreService] Error fetching stores: $e');
       return [];
     }
   }
@@ -108,7 +107,6 @@ class StoreService {
             : null,
       );
     } catch (e) {
-      print('❌ [StoreService] Error fetching store by ID: $e');
       return null;
     }
   }
@@ -147,12 +145,9 @@ class StoreService {
 
       sql += ' ORDER BY s.name ASC';
 
-      print('📋 [StoreService] Executing query: $sql');
-      print('📋 [StoreService] Values: $params');
 
       final results = await _db.query(sql, params);
 
-      print('✅ [StoreService] Found ${results.length} stores');
 
       return results.map((row) {
         final data = row.fields;
@@ -177,7 +172,6 @@ class StoreService {
         );
       }).toList();
     } catch (e) {
-      print('❌ [StoreService] Error fetching stores for user: $e');
       return [];
     }
   }

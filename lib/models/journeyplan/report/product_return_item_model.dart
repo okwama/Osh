@@ -21,7 +21,6 @@ class ProductReturnItem {
         try {
           return int.parse(value);
         } catch (e) {
-          print('Error parsing integer: $value');
           return null;
         }
       }

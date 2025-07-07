@@ -472,10 +472,8 @@ class Report {
   }
 
   static ReportType _parseReportType(dynamic type) {
-    print('DEBUG: Parsing report type from: $type (${type.runtimeType})');
 
     if (type == null) {
-      print('ERROR: Report type is null');
       throw Exception('Report type cannot be null');
     }
 
@@ -489,7 +487,6 @@ class Report {
       typeStr = type.toString().toUpperCase().replaceAll(' ', '_');
     }
 
-    print('DEBUG: Normalized type string: $typeStr');
 
     // Try exact match first
     switch (typeStr) {
@@ -518,7 +515,6 @@ class Report {
           return ReportType.PRODUCT_SAMPLE;
         }
 
-        print('ERROR: Unknown report type: $typeStr');
         throw Exception('Unknown report type: $typeStr');
     }
   }

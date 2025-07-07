@@ -61,10 +61,8 @@ class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
 
     if (userId != null) {
       try {
-        print('🔍 Checking session status for user: $userId');
         final currentSession =
             await SessionService.getCurrentSession(int.parse(userId));
-        print('📋 Current session: $currentSession');
 
         setState(() {
           isSessionActive = currentSession?.isActive ?? false;
@@ -72,13 +70,11 @@ class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
         print(
             '✅ Session status updated: ${isSessionActive ? 'Active' : 'Inactive'} (Status: ${currentSession?.status ?? 'None'})');
       } catch (e) {
-        print('❌ Error checking session status: $e');
         setState(() {
           isSessionActive = false;
         });
       }
     } else {
-      print('⚠️ No user ID found in storage');
       setState(() {
         isSessionActive = false;
       });
@@ -94,7 +90,6 @@ class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
     if (userId == null) return;
 
     try {
-      print('🔍 Checking session status for user: $userId');
       // Use refreshSession to bypass cache for timeout checks
       final currentSession =
           await SessionService.refreshSession(int.parse(userId));
@@ -113,7 +108,6 @@ class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
         }
       }
     } catch (e) {
-      print('❌ Error checking session status: $e');
       // Don't show error to user for background checks
       // Don't change session state on database errors
     }
@@ -192,7 +186,82 @@ class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
             colorText: Colors.white,
           );
         } else {
-          throw Exception(result['message']);
+          // Handle specific error for early session restriction
+          if (result['error'] == 'EARLY_SESSION_RESTRICTED') {
+            await showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: Row(
+                  children: [
+                    Icon(
+                      Icons.access_time,
+                      color: Colors.orange,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Session Restricted',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange,
+                      ),
+                    ),
+                  ],
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      result['message'],
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.orange.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: Colors.orange.shade700,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Your shift starts at 9:00 AM. Please wait until then to begin your work session.',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.orange.shade700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Get.back(),
+                    child: const Text(
+                      'OK',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          } else {
+            throw Exception(result['message']);
+          }
         }
       }
     } catch (e) {

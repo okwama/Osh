@@ -127,7 +127,6 @@ class ClientService {
         queryDuration: Duration(milliseconds: stopwatch.elapsedMilliseconds),
       );
     } catch (e) {
-      print('❌ Error fetching clients with keyset pagination: $e');
       rethrow;
     }
   }
@@ -187,7 +186,6 @@ class ClientService {
         queryDuration: result.queryDuration,
       );
     } catch (e) {
-      print('❌ Error fetching clients with offset pagination: $e');
       rethrow;
     }
   }
@@ -230,7 +228,6 @@ class ClientService {
       }
       return Client.fromJson(results.first.fields);
     } catch (e) {
-      print('❌ Error fetching client by ID: $e');
       rethrow;
     }
   }
@@ -265,7 +262,6 @@ class ClientService {
       }
       return client;
     } catch (e) {
-      print('❌ Error creating client: $e');
       rethrow;
     }
   }
@@ -299,7 +295,6 @@ class ClientService {
       );
       return await getClientById(client.id) ?? client;
     } catch (e) {
-      print('❌ Error updating client: $e');
       rethrow;
     }
   }
@@ -321,7 +316,6 @@ class ClientService {
       );
       return (results.affectedRows ?? 0) > 0;
     } catch (e) {
-      print('❌ Error deleting client: $e');
       rethrow;
     }
   }
@@ -344,7 +338,6 @@ class ClientService {
         'inactive': row['inactive'],
       };
     } catch (e) {
-      print('❌ Error getting client stats: $e');
       rethrow;
     }
   }
@@ -379,7 +372,6 @@ class ClientService {
       }
       return dbStats;
     } catch (e) {
-      print('❌ Error getting performance metrics: $e');
       rethrow;
     }
   }
@@ -515,7 +507,6 @@ class ClientService {
               region: '',
               countryId: 0);
     } catch (e) {
-      print('❌ Error updating client location: $e');
       rethrow;
     }
   }
@@ -551,7 +542,6 @@ class ClientService {
           sql, [latitude, longitude, latitude, userCountryId, radiusKm, limit]);
       return results.map((row) => Client.fromJson(row.fields)).toList();
     } catch (e) {
-      print('❌ Error getting clients near location: $e');
       rethrow;
     }
   }

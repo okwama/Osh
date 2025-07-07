@@ -31,7 +31,6 @@ class ProductReportService {
         journeyPlanId: journeyPlanId,
       );
 
-      print('✅ Foreign key validation passed for ProductReport submission');
 
       // Start transaction
       await _db.query('START TRANSACTION');
@@ -76,7 +75,6 @@ class ProductReportService {
         // Commit transaction
         await _db.query('COMMIT');
 
-        print('✅ ProductReport submitted successfully');
 
         // Return a simple success report without fetching from database
         return Report(
@@ -108,11 +106,9 @@ class ProductReportService {
       } catch (e) {
         // Rollback transaction
         await _db.query('ROLLBACK');
-        print('❌ Transaction rolled back due to error: $e');
         rethrow;
       }
     } catch (e) {
-      print('❌ Error submitting product report: $e');
 
       // Provide more specific error messages
       if (e.toString().contains('Foreign key validation failed')) {
@@ -144,7 +140,6 @@ class ProductReportService {
         limit: 100,
       );
     } catch (e) {
-      print('❌ Error getting product reports by journey plan: $e');
       rethrow;
     }
   }
@@ -165,7 +160,6 @@ class ProductReportService {
         limit: 100,
       );
     } catch (e) {
-      print('❌ Error getting product reports by client: $e');
       rethrow;
     }
   }
@@ -201,7 +195,6 @@ class ProductReportService {
 
       return reports;
     } catch (e) {
-      print('❌ Error fetching product reports by product: $e');
       rethrow;
     }
   }

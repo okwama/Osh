@@ -9,7 +9,6 @@ class ClientStockService {
       // For now, return true to enable the feature
       return true;
     } catch (e) {
-      print('❌ Error checking client stock feature status: $e');
       // Default to enabled if we can't check the status
       return true;
     }
@@ -22,7 +21,6 @@ class ClientStockService {
       // For now, return empty list
       return [];
     } catch (e) {
-      print('❌ Error fetching client stock: $e');
       return [];
     }
   }
@@ -38,7 +36,6 @@ class ClientStockService {
       print(
           '📦 Updating stock for client $clientId, product $productId: $quantity');
     } catch (e) {
-      print('❌ Error updating client stock: $e');
       rethrow;
     }
   }

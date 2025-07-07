@@ -198,7 +198,6 @@ class SafeErrorHandler {
 
   /// Log error safely for debugging
   static void logError(dynamic error, {String? context}) {
-    print('❌ Error${context != null ? ' in $context' : ''}: $error');
   }
 
   /// Check if error should be retried
@@ -245,4 +244,3 @@ extension SafeErrorExtension on dynamic {
         errorString.contains('504');
   }
 }
-

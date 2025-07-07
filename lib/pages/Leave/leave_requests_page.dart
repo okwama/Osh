@@ -66,7 +66,6 @@ class _LeaveRequestsPageState extends State<LeaveRequestsPage> {
         return;
       }
 
-      print('Loading leave requests for staff ID: $staffId');
 
       final leaves = await LeaveService.getStaffLeaves(staffId);
       if (mounted) {
@@ -340,4 +339,3 @@ class _LeaveRequestsPageState extends State<LeaveRequestsPage> {
     );
   }
 }
-

@@ -21,7 +21,6 @@ class CartController extends GetxController {
       await _cartHiveService.init();
       items.value = _cartHiveService.getCartItems();
     } catch (e) {
-      print('Error loading cart items: $e');
     } finally {
       isLoading.value = false;
     }
@@ -47,7 +46,6 @@ class CartController extends GetxController {
         await _cartHiveService.addItem(item);
       }
     } catch (e) {
-      print('Error adding item to cart: $e');
       rethrow;
     }
   }
@@ -62,7 +60,6 @@ class CartController extends GetxController {
         await _cartHiveService.removeItem(index);
       }
     } catch (e) {
-      print('Error removing item from cart: $e');
       rethrow;
     }
   }
@@ -78,7 +75,6 @@ class CartController extends GetxController {
         await _cartHiveService.updateItem(index, updatedItem);
       }
     } catch (e) {
-      print('Error updating item quantity: $e');
       rethrow;
     }
   }
@@ -88,7 +84,6 @@ class CartController extends GetxController {
       items.clear();
       await _cartHiveService.clearCart();
     } catch (e) {
-      print('Error clearing cart: $e');
       rethrow;
     }
   }

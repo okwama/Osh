@@ -94,7 +94,6 @@ class _SessionHistoryPageState extends State<SessionHistoryPage> {
             .toList();
       }
     } catch (e) {
-      print('Error precaching data: $e');
     }
   }
 
@@ -118,21 +117,15 @@ class _SessionHistoryPageState extends State<SessionHistoryPage> {
     });
 
     try {
-      print('Fetching sessions for user ID: $_userId');
       final response = await SessionService.getSessionHistory(_userId!);
 
       // Print the raw response
-      print('Raw API Response:');
-      print(response);
-      print('Total sessions in response: ${response['totalSessions']}');
-      print('Sessions array length: ${response['sessions']?.length ?? 0}');
 
       if (response['sessions'] != null) {
         final allSessions = (response['sessions'] as List)
             .map((session) => Session.fromJson(session))
             .toList();
 
-        print('Parsed sessions: ${allSessions.length}');
 
         // Filter sessions based on selected date range
         final filteredSessions = _filterSessionsByDate(
@@ -141,20 +134,17 @@ class _SessionHistoryPageState extends State<SessionHistoryPage> {
           _isCustomDate ? _endDate : DateTime.now(),
         );
 
-        print('Filtered sessions: ${filteredSessions.length}');
 
         setState(() {
           _sessions = filteredSessions;
           _isLoading = false;
         });
       } else {
-        print('No sessions data in response');
         setState(() {
           _isLoading = false;
         });
       }
     } catch (e) {
-      print('Error loading sessions: $e');
       setState(() {
         _error = e.toString();
         _isLoading = false;

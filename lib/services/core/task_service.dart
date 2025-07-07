@@ -56,7 +56,6 @@ class TaskService {
         );
       }).toList();
     } catch (e) {
-      print('❌ Error getting tasks: $e');
       rethrow;
     }
   }
@@ -111,7 +110,6 @@ class TaskService {
         );
       }).toList();
     } catch (e) {
-      print('❌ Error getting task history: $e');
       rethrow;
     }
   }
@@ -129,7 +127,6 @@ class TaskService {
       final result = await _db.query(sql, [taskId]);
       return (result.affectedRows ?? 0) > 0;
     } catch (e) {
-      print('❌ Error completing task: $e');
       return false;
     }
   }
@@ -161,7 +158,6 @@ class TaskService {
 
       return result.insertId;
     } catch (e) {
-      print('❌ Error creating task: $e');
       return null;
     }
   }
@@ -209,7 +205,6 @@ class TaskService {
       final result = await _db.query(sql, params);
       return (result.affectedRows ?? 0) > 0;
     } catch (e) {
-      print('❌ Error updating task: $e');
       return false;
     }
   }
@@ -223,7 +218,6 @@ class TaskService {
 
       return (result.affectedRows ?? 0) > 0;
     } catch (e) {
-      print('❌ Error deleting task: $e');
       return false;
     }
   }
@@ -277,7 +271,6 @@ class TaskService {
         'lowPriorityTasks': fields['lowPriorityTasks'] ?? 0,
       };
     } catch (e) {
-      print('❌ Error getting task stats: $e');
       return {
         'totalTasks': 0,
         'completedTasks': 0,

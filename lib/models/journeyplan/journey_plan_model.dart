@@ -206,7 +206,6 @@ class JourneyPlanModel {
           return DateTime.parse(value.replaceAll(' ', 'T'));
         }
       } catch (e) {
-        print('Error parsing datetime: $value - $e');
         return DateTime.now();
       }
     }

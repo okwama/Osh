@@ -104,7 +104,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         setState(() {});
       }
     } catch (e) {
-      print('Error loading currency config: $e');
     }
   }
 

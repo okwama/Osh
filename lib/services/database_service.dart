@@ -22,11 +22,8 @@ class DatabaseService {
   /// Initialize the database service
   Future<void> initialize() async {
     try {
-      print('🔄 Initializing DatabaseService...');
       await _connectionPool.initialize();
-      print('✅ DatabaseService initialized successfully');
     } catch (e) {
-      print('❌ Failed to initialize DatabaseService: $e');
       rethrow;
     }
   }
@@ -120,15 +117,12 @@ class DatabaseService {
 
   /// Clean up resources
   Future<void> dispose() async {
-    print('🔄 Disposing DatabaseService...');
     await _connectionPool.dispose();
-    print('✅ DatabaseService disposed');
   }
 
   /// Health check
   Future<bool> isHealthy() async {
     try {
-      print('🏥 Performing database health check...');
       final results = await query('SELECT 1 as health_check').timeout(
         const Duration(seconds: 5),
         onTimeout: () {
@@ -136,10 +130,8 @@ class DatabaseService {
         },
       );
       final isHealthy = results.isNotEmpty;
-      print('✅ Database health check: ${isHealthy ? "PASSED" : "FAILED"}');
       return isHealthy;
     } catch (e) {
-      print('❌ Health check failed: $e');
       return false;
     }
   }
@@ -147,7 +139,6 @@ class DatabaseService {
   /// Test database connectivity
   Future<Map<String, dynamic>> testConnection() async {
     try {
-      print('🔍 Testing database connectivity...');
       final startTime = DateTime.now();
 
       // Test connection pool
@@ -195,7 +186,6 @@ class DatabaseService {
         'max_wait_time_seconds': 25,
       };
     } catch (e) {
-      print('❌ Error getting database stats: $e');
       return {'error': e.toString()};
     }
   }

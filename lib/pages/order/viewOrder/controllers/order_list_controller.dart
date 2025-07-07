@@ -36,7 +36,6 @@ class OrderListController {
         dateFrom: dateFrom,
         dateTo: dateTo,
       );
-      print('📦 Loaded ${newOrders.length} orders');
 
       orders = newOrders;
       isLoading = false;
@@ -84,7 +83,6 @@ class OrderListController {
         }
       } catch (e) {
         // Silently fail for precaching
-        print('Precaching failed for page $pageNum: $e');
       }
     }
   }
@@ -212,7 +210,6 @@ class OrderListController {
       }
     } catch (e) {
       // Handle error silently - the old data is still valid
-      print('Error refreshing order $orderId: $e');
     }
   }
 
@@ -248,7 +245,6 @@ class OrderListController {
         if (attempts >= maxRetries) {
           rethrow;
         }
-        print('Retry attempt $attempts of $maxRetries after error: $e');
         await Future.delayed(retryDelay * attempts); // Exponential backoff
       }
     }

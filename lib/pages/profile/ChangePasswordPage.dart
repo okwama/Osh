@@ -59,15 +59,11 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
     try {
       // Call API to update password
-      print('CHANGE PASSWORD: Attempting to change password');
       await controller.updatePassword(
         currentPassword: _currentPasswordController.text,
         newPassword: _newPasswordController.text,
         confirmPassword: _confirmPasswordController.text,
       );
-      print('CHANGE PASSWORD: API call completed');
-      print('CHANGE PASSWORD: Success: ${controller.passwordSuccess.value}');
-      print('CHANGE PASSWORD: Error: ${controller.passwordError.value}');
 
       // Check for success and navigate back if successful
       if (controller.passwordSuccess.value.isNotEmpty) {
@@ -94,7 +90,6 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
             colorText: Colors.red[700]);
       }
     } catch (e) {
-      print('CHANGE PASSWORD: Exception caught: $e');
       Get.snackbar('Error', 'An unexpected error occurred: $e',
           backgroundColor: Colors.red.withOpacity(0.1),
           colorText: Colors.red[700]);

@@ -14,7 +14,6 @@ class AuthService {
   static Future<Map<String, dynamic>> login(
       String phoneNumber, String password) async {
     try {
-      print('🔐 Attempting login for: $phoneNumber');
 
       // Test database connectivity first
       final connectionTest = await _db.testConnection();
@@ -40,22 +39,17 @@ class AuthService {
       final results = await _db.query(sql, [phoneNumber]);
 
       if (results.isEmpty) {
-        print('❌ No user found with phone number: $phoneNumber');
         return {
           'success': false,
           'message': 'Invalid phone number or password',
         };
       }
 
-      print('✅ User found in database');
       final userData = results.first.fields;
-      print('📋 User data keys: ${userData.keys.toList()}');
-      print('📋 User data: ${userData.toString()}');
       final storedPassword = userData['password']?.toString();
 
       // Check if password exists
       if (storedPassword == null || storedPassword.isEmpty) {
-        print('❌ User found but password is null or empty');
         return {
           'success': false,
           'message': 'Invalid phone number or password',
@@ -72,7 +66,6 @@ class AuthService {
         };
       }
 
-      print('🔄 Creating SalesRepModel from user data...');
       final salesRep = SalesRepModel.fromMap(userData);
       print(
           '✅ SalesRepModel created successfully: ${salesRep.name} (ID: ${salesRep.id})');
@@ -87,7 +80,6 @@ class AuthService {
             jwtToken, // In a real app, you'd generate a separate refresh token
       );
 
-      print('✅ Login successful for user: ${salesRep.name}');
 
       return {
         'success': true,
@@ -96,7 +88,6 @@ class AuthService {
         'token': jwtToken,
       };
     } catch (e) {
-      print('❌ Login error: $e');
 
       // Provide more specific error messages
       String errorMessage = 'Login failed';
@@ -124,7 +115,6 @@ class AuthService {
   static Future<Map<String, dynamic>> register(
       Map<String, dynamic> userData) async {
     try {
-      print('🔐 Attempting registration for: ${userData['phoneNumber']}');
 
       // Check if user already exists
       const checkSql = 'SELECT id FROM SalesRep WHERE phoneNumber = ?';
@@ -169,7 +159,6 @@ class AuthService {
       final results = await _db.query(insertSql, insertParams);
 
       if ((results.affectedRows ?? 0) > 0) {
-        print('✅ Registration successful for: ${userData['name']}');
         return {
           'success': true,
           'message': 'Registration successful',
@@ -181,7 +170,6 @@ class AuthService {
         };
       }
     } catch (e) {
-      print('❌ Registration error: $e');
       return {
         'success': false,
         'message': 'Registration failed: $e',
@@ -209,7 +197,6 @@ class AuthService {
 
       return SalesRepModel.fromMap(results.first.fields);
     } catch (e) {
-      print('❌ Get user error: $e');
       return null;
     }
   }
@@ -244,7 +231,6 @@ class AuthService {
       final results = await _db.query(sql, params);
       return (results.affectedRows ?? 0) > 0;
     } catch (e) {
-      print('❌ Update profile error: $e');
       return false;
     }
   }
@@ -277,7 +263,6 @@ class AuthService {
 
       return (results.affectedRows ?? 0) > 0;
     } catch (e) {
-      print('❌ Change password error: $e');
       return false;
     }
   }
@@ -289,7 +274,6 @@ class AuthService {
       await TokenService.clearTokens();
       return true;
     } catch (e) {
-      print('❌ Logout error: $e');
       return false;
     }
   }
@@ -306,7 +290,6 @@ class AuthService {
         'salesRep': user.toMap(),
       };
     } catch (e) {
-      print('❌ Get profile error: $e');
       return null;
     }
   }
@@ -320,7 +303,6 @@ class AuthService {
       }
       return null;
     } catch (e) {
-      print('❌ Update profile photo error: $e');
       return null;
     }
   }
@@ -353,7 +335,6 @@ class AuthService {
 
       return '$encodedHeader.$encodedPayload.$signature';
     } catch (e) {
-      print('❌ Error generating token: $e');
       rethrow;
     }
   }

@@ -21,39 +21,29 @@ class _FeedbackReportPageState extends State<FeedbackReportPage>
   @override
   void initState() {
     super.initState();
-    print('DRASTIC DEBUG: FEEDBACK REPORT PAGE INITIALIZED');
-    print('Journey Plan Details:');
-    print('Journey Plan ID: ${widget.journeyPlan.id}');
     print(
         'Journey Plan User ID: ${widget.journeyPlan.salesRepId} (${widget.journeyPlan.salesRepId.runtimeType})');
-    print('Journey Plan Client ID: ${widget.journeyPlan.client.id}');
 
     // Try to get user ID from storage for comparison
     final box = GetStorage();
     final userData = box.read('salesRep');
     if (userData != null) {
-      print('User data from storage: $userData');
       print(
           'User ID from storage: ${userData['id']} (${userData['id'].runtimeType})');
 
       // Compare user IDs
       final storedUserId = userData['id'];
       final journeyUserId = widget.journeyPlan.salesRepId;
-      print('User ID comparison:');
-      print('Direct equality: ${storedUserId == journeyUserId}');
       print(
           'String equality: ${storedUserId.toString() == journeyUserId.toString()}');
     } else {
-      print('WARNING: No user data found in storage');
     }
   }
 
   @override
   Future<void> onSubmit() async {
-    print('DRASTIC DEBUG: FEEDBACK REPORT SUBMISSION STARTED');
 
     if (commentController.text.trim().isEmpty) {
-      print('DRASTIC DEBUG: Empty comment detected');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter feedback')),
       );
@@ -65,7 +55,6 @@ class _FeedbackReportPageState extends State<FeedbackReportPage>
     final salesRepData = box.read('salesRep');
 
     if (salesRepData == null) {
-      print('DRASTIC DEBUG: No salesRep data found in storage');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text('Authentication error: User data not found')),
@@ -78,7 +67,6 @@ class _FeedbackReportPageState extends State<FeedbackReportPage>
         salesRepData is Map<String, dynamic> ? salesRepData['id'] : null;
 
     if (salesRepId == null) {
-      print('DRASTIC DEBUG: Could not determine salesRep ID from storage data');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text('Authentication error: User ID not found')),
@@ -86,12 +74,6 @@ class _FeedbackReportPageState extends State<FeedbackReportPage>
       return;
     }
 
-    print('DRASTIC DEBUG: Creating report with:');
-    print('Type: ${ReportType.FEEDBACK}');
-    print('Journey Plan ID: ${widget.journeyPlan.id}');
-    print('SalesRep ID: $salesRepId');
-    print('Client ID: ${widget.journeyPlan.client.id}');
-    print('Comment: ${commentController.text}');
 
     final report = Report(
       type: ReportType.FEEDBACK,
@@ -105,14 +87,10 @@ class _FeedbackReportPageState extends State<FeedbackReportPage>
     );
 
     // Debug: Validate report object before submission
-    print('FEEDBACK REPORT DEBUG: Report type: ${report.type}');
     print(
         'FEEDBACK REPORT DEBUG: Report journeyPlanId: ${report.journeyPlanId}');
-    print('FEEDBACK REPORT DEBUG: Report salesRepId: ${report.salesRepId}');
-    print('FEEDBACK REPORT DEBUG: Report clientId: ${report.clientId}');
 
     if (report.feedbackReport == null) {
-      print('FEEDBACK REPORT DEBUG: ERROR - feedbackReport field is null!');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error: Feedback details missing')),
       );
@@ -122,7 +100,6 @@ class _FeedbackReportPageState extends State<FeedbackReportPage>
     print(
         'FEEDBACK REPORT DEBUG: FeedbackReport comment: ${report.feedbackReport!.comment}');
 
-    print('DRASTIC DEBUG: Report created, submitting...');
     await submitReport(report);
   }
 

@@ -127,7 +127,6 @@ class PaginationService {
         queryDuration: queryStopwatch.elapsed,
       );
     } catch (e) {
-      print('❌ Keyset pagination query failed: $e');
       rethrow;
     }
   }
@@ -226,7 +225,6 @@ class PaginationService {
         queryDuration: queryStopwatch.elapsed,
       );
     } catch (e) {
-      print('❌ Offset pagination failed: $e');
       rethrow;
     }
   }

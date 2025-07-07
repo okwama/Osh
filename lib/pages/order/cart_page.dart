@@ -67,7 +67,6 @@ class _CartPageState extends State<CartPage> with WidgetsBindingObserver {
         setState(() {});
       }
     } catch (e) {
-      print('Error loading currency config: $e');
     }
   }
 
@@ -97,13 +96,11 @@ class _CartPageState extends State<CartPage> with WidgetsBindingObserver {
 
       print(
           'User context - Region ID: $userRegionId, Country ID: $userCountryId');
-      print('Outlet country ID: ${widget.outlet.countryId}');
 
       // Use the country ID from user data, fallback to outlet country
       final countryId = userCountryId ?? widget.outlet.countryId;
 
       if (countryId == null) {
-        print('No country ID available for store loading');
         Get.snackbar(
           'Error',
           'Unable to determine your country. Please contact support.',
@@ -114,13 +111,10 @@ class _CartPageState extends State<CartPage> with WidgetsBindingObserver {
         return;
       }
 
-      print('📋 [CartPage] Loading stores for country ID: $countryId');
       if (userRegionId != null) {
-        print('📋 [CartPage] Filtering by region ID: $userRegionId');
       }
 
       // Fetch stores from database
-      print('📋 [CartPage] Calling StoreService.getStoresForUser...');
       var stores = await StoreService.getStoresForUser(countryId, userRegionId);
 
       print(
@@ -129,7 +123,6 @@ class _CartPageState extends State<CartPage> with WidgetsBindingObserver {
         print(
             '📋 [CartPage] Available stores: ${stores.map((s) => '${s.name} (${s.region?.name ?? 'No Region'})').join(', ')}');
       } else {
-        print('⚠️ [CartPage] No stores found for country ID: $countryId');
 
         // If no stores found for specific region, try to get all stores in the country
         if (userRegionId != null) {
@@ -149,7 +142,6 @@ class _CartPageState extends State<CartPage> with WidgetsBindingObserver {
 
       if (stores.isNotEmpty) {
         selectedStore.value = stores.first;
-        print('✅ [CartPage] Selected store: ${selectedStore.value?.name}');
         if (selectedStore.value?.region != null) {
           print(
               '📋 [CartPage] Store region: ${selectedStore.value!.region!.name}');
@@ -169,7 +161,6 @@ class _CartPageState extends State<CartPage> with WidgetsBindingObserver {
         );
       }
     } catch (e) {
-      print('❌ [CartPage] Error loading stores: $e');
       Get.snackbar(
         'Error',
         'Failed to load stores. Please try again.',
@@ -230,7 +221,6 @@ class _CartPageState extends State<CartPage> with WidgetsBindingObserver {
         selectedImage.value = image;
       }
     } catch (e) {
-      print('Error picking image: $e');
       Get.snackbar(
         'Error',
         'Failed to pick image. Please try again.',
@@ -309,7 +299,6 @@ class _CartPageState extends State<CartPage> with WidgetsBindingObserver {
 
       _processOrderSuccess();
     } catch (e) {
-      print('Error placing order: $e');
       handleOrderError(e);
     } finally {
       isLoading.value = false;
@@ -396,7 +385,6 @@ class _CartPageState extends State<CartPage> with WidgetsBindingObserver {
 
   void handleOrderError(dynamic error) async {
     String errorMessage = error.toString();
-    print('Order error: $errorMessage');
 
     // If the response was a success but the returned data was incomplete,
     // ApiService.createOrder will now show a success dialog and return null.

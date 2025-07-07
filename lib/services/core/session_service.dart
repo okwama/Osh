@@ -143,7 +143,6 @@ class SessionService {
         'success': true,
       };
     } catch (e) {
-      print('❌ Error getting session history: $e');
       return {
         'sessions': [],
         'totalSessions': 0,
@@ -159,9 +158,7 @@ class SessionService {
       // Test database connectivity first
       try {
         await _db.query('SELECT 1 as test');
-        print('✅ Database connectivity test passed');
       } catch (e) {
-        print('❌ Database connectivity test failed: $e');
         return {
           'success': false,
           'message': 'Database connection failed: ${e.toString()}',
@@ -173,6 +170,30 @@ class SessionService {
       await _ensureLoginHistoryTable();
 
       final now = getNairobiTime();
+      final shiftStart = getShiftStartTime();
+
+      // Check if it's before 9 AM and prevent session start
+      if (now.isBefore(shiftStart)) {
+        final timeUntilStart = shiftStart.difference(now);
+        final hours = timeUntilStart.inHours;
+        final minutes = timeUntilStart.inMinutes.remainder(60);
+
+        String timeMessage;
+        if (hours > 0) {
+          timeMessage =
+              '$hours hour${hours > 1 ? 's' : ''} and $minutes minute${minutes > 1 ? 's' : ''}';
+        } else {
+          timeMessage = '$minutes minute${minutes > 1 ? 's' : ''}';
+        }
+
+        return {
+          'success': false,
+          'message':
+              'Sessions cannot be started before 9:00 AM. Please wait $timeMessage until your shift begins.',
+          'error': 'EARLY_SESSION_RESTRICTED',
+        };
+      }
+
       final nowString = _formatDateTime(now);
 
       // Determine if session is late or early
@@ -185,12 +206,9 @@ class SessionService {
         ) VALUES (?, ?, ?, '1', ?, ?, ?, ?, ?)
       ''';
 
-      final shiftStart = _formatDateTime(getShiftStartTime());
+      final shiftStartString = _formatDateTime(shiftStart);
       final shiftEnd = _formatDateTime(getShiftEndTime());
 
-      print('🔄 Starting session for user: $salesRepId');
-      print('📋 Using timestamp: $nowString (Nairobi time)');
-      print('📋 Shift start: $shiftStart, Shift end: $shiftEnd');
       print(
           '📋 Session status: ${isLate ? 'LATE' : isEarly ? 'EARLY' : 'ON TIME'}');
 
@@ -200,14 +218,12 @@ class SessionService {
         nowString,
         isLate ? 1 : 0,
         isEarly ? 1 : 0,
-        shiftStart,
+        shiftStartString,
         shiftEnd,
         _timezone
       ]);
 
       if (result.insertId != null) {
-        print('✅ Session started successfully with ID: ${result.insertId}');
-
         // Clear cache for this user to force refresh
         _sessionCache.remove(salesRepId);
         _lastCheckTime.remove(salesRepId);
@@ -220,15 +236,12 @@ class SessionService {
           'isEarly': isEarly,
         };
       } else {
-        print('❌ Failed to get insert ID from session creation');
         return {
           'success': false,
           'message': 'Failed to start session - no insert ID returned',
         };
       }
     } catch (e) {
-      print('❌ Error starting session: $e');
-      print('📋 User ID: $salesRepId');
       return {
         'success': false,
         'message': 'An error occurred while starting session: ${e.toString()}',
@@ -262,9 +275,7 @@ class SessionService {
       ''';
 
       await _db.query(createTableSql);
-      print('✅ LoginHistory table ensured');
     } catch (e) {
-      print('❌ Error ensuring LoginHistory table: $e');
       // Don't rethrow - table might already exist
     }
   }
@@ -284,15 +295,9 @@ class SessionService {
         WHERE id = ? AND status = '1' AND sessionEnd IS NULL
       ''';
 
-      print('🔄 Ending session: $sessionId');
-      print('📋 Using timestamp: $nowString (Nairobi time)');
-      print('📋 Session ended early: $endedEarly');
-
       final result = await _db.query(sql, [nowString, nowString, sessionId]);
 
       if ((result.affectedRows ?? 0) > 0) {
-        print('✅ Session ended successfully');
-
         // Clear all session caches since session state changed
         _sessionCache.clear();
         _lastCheckTime.clear();
@@ -303,14 +308,12 @@ class SessionService {
           'endedEarly': endedEarly,
         };
       } else {
-        print('❌ Session not found or already ended');
         return {
           'success': false,
           'message': 'Session not found or already ended',
         };
       }
     } catch (e) {
-      print('❌ Error ending session: $e');
       return {
         'success': false,
         'message': 'An error occurred while ending session',
@@ -334,8 +337,6 @@ class SessionService {
         }
       }
 
-      print('🔍 Getting current session for user: $salesRepId (cache miss)');
-
       const sql = '''
         SELECT 
           id, userId, loginAt, logoutAt, sessionStart, sessionEnd,
@@ -346,28 +347,20 @@ class SessionService {
         LIMIT 1
       ''';
 
-      print('📋 Executing query: $sql');
-      print('📋 Parameters: [$salesRepId]');
-
       // Add timeout and retry logic
       dynamic results;
       try {
         results = await _db.query(sql, [salesRepId]);
       } catch (e) {
-        print('⚠️ Session query failed: $e, using cached data if available');
         // Return cached session if available, otherwise null
         return cachedSession;
       }
 
-      print('📋 Query results: ${results.length} rows');
-
       Session? session;
       if (results.isEmpty) {
-        print('📋 No active session found for user: $salesRepId');
         session = null;
       } else {
         final fields = results.first.fields;
-        print('📋 Session fields: $fields');
 
         session = Session(
           id: fields['id'],
@@ -413,8 +406,6 @@ class SessionService {
 
       return session;
     } catch (e) {
-      print('❌ Error getting current session: $e');
-      print('📋 User ID: $salesRepId');
       // Return cached session if available, otherwise null
       return _sessionCache[salesRepId];
     }
@@ -425,11 +416,9 @@ class SessionService {
     if (userId != null) {
       _sessionCache.remove(userId);
       _lastCheckTime.remove(userId);
-      print('🗑️ Cleared session cache for user: $userId');
     } else {
       _sessionCache.clear();
       _lastCheckTime.clear();
-      print('🗑️ Cleared all session caches');
     }
   }
 
@@ -490,7 +479,6 @@ class SessionService {
         );
       }).toList();
     } catch (e) {
-      print('❌ Error getting complete sessions: $e');
       return [];
     }
   }
@@ -513,12 +501,8 @@ class SessionService {
         // Clear all caches since session states changed
         _sessionCache.clear();
         _lastCheckTime.clear();
-      } else {
-        print('✅ No inconsistent sessions found');
-      }
-    } catch (e) {
-      print('❌ Error fixing inconsistent sessions: $e');
-    }
+      } else {}
+    } catch (e) {}
   }
 
   /// Auto-end all active sessions at 6:10 PM
@@ -539,21 +523,15 @@ class SessionService {
       final now = getNairobiTime();
       final nowString = _formatDateTime(now);
 
-      print('🔄 Auto-ending all active sessions at $nowString');
       final result = await _db.query(sql, [nowString, nowString]);
 
       final affectedRows = result.affectedRows ?? 0;
       if (affectedRows > 0) {
-        print('✅ Auto-ended $affectedRows active sessions');
         // Clear all caches since session states changed
         _sessionCache.clear();
         _lastCheckTime.clear();
-      } else {
-        print('📋 No active sessions to auto-end');
-      }
-    } catch (e) {
-      print('❌ Error auto-ending sessions: $e');
-    }
+      } else {}
+    } catch (e) {}
   }
 
   /// Get session statistics
@@ -605,7 +583,6 @@ class SessionService {
         'completeSessions': fields['completeSessions'] ?? 0,
       };
     } catch (e) {
-      print('❌ Error getting session stats: $e');
       return {
         'totalSessions': 0,
         'avgDuration': 0,

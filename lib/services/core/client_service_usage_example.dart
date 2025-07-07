@@ -15,12 +15,9 @@ class ClientServiceUsageExample {
         limit: 20,
       );
 
-      print('Found ${clients.length} clients');
       for (final client in clients) {
-        print('Client: ${client.name} - ${client.address}');
       }
     } catch (e) {
-      print('Error fetching clients: $e');
     }
   }
 
@@ -36,13 +33,10 @@ class ClientServiceUsageExample {
         search: 'Nairobi',
       );
 
-      print('Found ${clients.length} clients for journey planning');
       for (final client in clients) {
-        print('JP Client: ${client.name} - ${client.address}');
         // Only essential fields are loaded: id, name, address, contact, email
       }
     } catch (e) {
-      print('Error fetching clients for journey plan: $e');
     }
   }
 
@@ -51,9 +45,7 @@ class ClientServiceUsageExample {
     try {
       final clientService = ClientService.instance;
       final searchResults = await clientService.searchClients(query: 'Nairobi');
-      print('Found ${searchResults.items.length} clients matching "Nairobi"');
     } catch (e) {
-      print('Error searching clients: $e');
     }
   }
 
@@ -62,9 +54,7 @@ class ClientServiceUsageExample {
     try {
       final clientService = ClientService.instance;
       final regionClients = await clientService.getClientsByRegion(1);
-      print('Found ${regionClients.length} clients in region 1');
     } catch (e) {
-      print('Error fetching clients by region: $e');
     }
   }
 
@@ -91,7 +81,6 @@ class ClientServiceUsageExample {
       print(
           'Created client: ${createdClient.name} with ID: ${createdClient.id}');
     } catch (e) {
-      print('Error creating client: $e');
     }
   }
 
@@ -105,11 +94,9 @@ class ClientServiceUsageExample {
         longitude: 36.8219,
       );
 
-      print('Updated client location: ${updatedClient.name}');
       print(
           'New coordinates: ${updatedClient.latitude}, ${updatedClient.longitude}');
     } catch (e) {
-      print('Error updating client location: $e');
     }
   }
 
@@ -124,12 +111,9 @@ class ClientServiceUsageExample {
         limit: 20,
       );
 
-      print('Found ${nearbyClients.length} clients within 10km');
       for (final client in nearbyClients) {
-        print('Nearby client: ${client.name}');
       }
     } catch (e) {
-      print('Error fetching nearby clients: $e');
     }
   }
 
@@ -139,12 +123,7 @@ class ClientServiceUsageExample {
       final clientService = ClientService.instance;
       final stats = await clientService.getClientStats();
 
-      print('Client Statistics:');
-      print('Total clients: ${stats['total']}');
-      print('Active clients: ${stats['active']}');
-      print('Inactive clients: ${stats['inactive']}');
     } catch (e) {
-      print('Error fetching client stats: $e');
     }
   }
 
@@ -156,7 +135,6 @@ class ClientServiceUsageExample {
       // First get the existing client
       final existingClient = await clientService.getClientById(1);
       if (existingClient == null) {
-        print('Client not found');
         return;
       }
 
@@ -176,9 +154,7 @@ class ClientServiceUsageExample {
       );
 
       final result = await clientService.updateClient(updatedClient);
-      print('Updated client: ${result.name}');
     } catch (e) {
-      print('Error updating client: $e');
     }
   }
 
@@ -189,12 +165,9 @@ class ClientServiceUsageExample {
       final success = await clientService.deleteClient(1);
 
       if (success) {
-        print('Client deleted successfully');
       } else {
-        print('Client not found or could not be deleted');
       }
     } catch (e) {
-      print('Error deleting client: $e');
     }
   }
 
@@ -209,10 +182,6 @@ class ClientServiceUsageExample {
         orderDirection: 'DESC',
       );
 
-      print('First page: ${firstPage.items.length} clients');
-      print('Has more: ${firstPage.hasMore}');
-      print('Next cursor: ${firstPage.nextCursor}');
-      print('Query duration: ${firstPage.queryDuration.inMilliseconds}ms');
 
       // Second page using cursor
       if (firstPage.hasMore && firstPage.nextCursor != null) {
@@ -222,11 +191,8 @@ class ClientServiceUsageExample {
           orderDirection: 'DESC',
         );
 
-        print('Second page: ${secondPage.items.length} clients');
-        print('Has more: ${secondPage.hasMore}');
       }
     } catch (e) {
-      print('Error with advanced pagination: $e');
     }
   }
 
@@ -241,14 +207,10 @@ class ClientServiceUsageExample {
         orderDirection: 'ASC',
       );
 
-      print('Search results: ${searchResults.items.length} clients');
-      print('Has more: ${searchResults.hasMore}');
 
       for (final client in searchResults.items) {
-        print('Found: ${client.name} - ${client.address}');
       }
     } catch (e) {
-      print('Error searching with pagination: $e');
     }
   }
 
@@ -258,15 +220,7 @@ class ClientServiceUsageExample {
       final clientService = ClientService.instance;
       final metrics = await clientService.getPerformanceMetrics();
 
-      print('Database Performance Metrics:');
-      print('Pool size: ${metrics['pool_size']}');
-      print('Active connections: ${metrics['active_connections']}');
-      print('Total queries: ${metrics['total_queries_executed']}');
-      print('Query timeouts: ${metrics['total_query_timeouts']}');
-      print('Success rate: ${metrics['success_rate']}%');
-      print('Is healthy: ${metrics['is_healthy']}');
     } catch (e) {
-      print('Error getting performance metrics: $e');
     }
   }
 }

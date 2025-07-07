@@ -130,17 +130,11 @@ class _VisibilityReportPageState extends State<VisibilityReportPage>
       final compressionRatio =
           (compressedSize / originalSize * 100).toStringAsFixed(1);
 
-      print('?? Image compression results:');
-      print('Original size: ${(originalSize / 1024).toStringAsFixed(2)} KB');
       print(
           'Compressed size: ${(compressedSize / 1024).toStringAsFixed(2)} KB');
-      print('Compression ratio: $compressionRatio%');
-      print('New dimensions: ${width}x$height');
-      print('Final quality: $quality%');
 
       return tempFile;
     } catch (e) {
-      print('? Image compression failed: $e');
       return null;
     }
   }
@@ -175,8 +169,6 @@ class _VisibilityReportPageState extends State<VisibilityReportPage>
       final imageUrl = await UploadService.uploadImage(compressedFile);
       stopwatch.stop();
 
-      print('? Image upload completed in ${stopwatch.elapsedMilliseconds}ms');
-      print('?? Image URL: $imageUrl');
 
       // Clean up temporary file
       await compressedFile.delete();
@@ -189,8 +181,6 @@ class _VisibilityReportPageState extends State<VisibilityReportPage>
       return imageUrl;
     } catch (e) {
       stopwatch.stop();
-      print('? Image upload failed after ${stopwatch.elapsedMilliseconds}ms');
-      print('Error details: $e');
 
       setState(() {
         _isUploading = false;
@@ -212,7 +202,6 @@ class _VisibilityReportPageState extends State<VisibilityReportPage>
     if (_isSubmitting) return;
 
     final stopwatch = Stopwatch()..start();
-    print('?? Starting report submission process');
 
     if (_imageFile == null &&
         _imageUrl == null &&
@@ -237,13 +226,11 @@ class _VisibilityReportPageState extends State<VisibilityReportPage>
 
       // Upload image if present
       if (_imageFile != null) {
-        print('??? Starting image upload');
         try {
           imageUrl = (await _uploadImage())?['url'] as String?;
           print(
               '??? Image upload completed: ${imageUrl != null ? 'Success' : 'Failed'}');
         } catch (error) {
-          print('? Image upload error: $error');
           if (error.toString().contains('SocketException') ||
               error.toString().contains('XMLHttpRequest error')) {
             imageError =
@@ -270,7 +257,6 @@ class _VisibilityReportPageState extends State<VisibilityReportPage>
 
       // Use new VisibilityReportService to submit report
       try {
-        print('?? Submitting report to database');
         await VisibilityReportService.submitVisibilityReport(
           journeyPlanId: widget.journeyPlan.id!,
           clientId: widget.journeyPlan.client.id,
@@ -278,9 +264,7 @@ class _VisibilityReportPageState extends State<VisibilityReportPage>
           imageUrl: imageUrl,
           userId: salesRepId,
         );
-        print('? Report submitted successfully');
       } catch (e) {
-        print('? Report submission error: $e');
         if (e.toString().contains('SocketException') ||
             e.toString().contains('XMLHttpRequest error')) {
           // Store report locally for later sync
@@ -301,7 +285,6 @@ class _VisibilityReportPageState extends State<VisibilityReportPage>
       }
 
       stopwatch.stop();
-      print('?? Total submission time: ${stopwatch.elapsedMilliseconds}ms');
 
       if (mounted) {
         // Show success with animation
@@ -337,7 +320,6 @@ class _VisibilityReportPageState extends State<VisibilityReportPage>
       stopwatch.stop();
       print(
           '? Total submission failed after ${stopwatch.elapsedMilliseconds}ms');
-      print('Error details: $e');
 
       if (mounted) {
         String errorMessage = 'Error submitting report';
@@ -647,4 +629,3 @@ class _VisibilityReportPageState extends State<VisibilityReportPage>
     super.dispose();
   }
 }
-

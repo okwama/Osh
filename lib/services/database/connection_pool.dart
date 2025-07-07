@@ -32,7 +32,6 @@ class ConnectionPool {
     if (_initCompleter.isCompleted) return;
 
     try {
-      print('🔄 Initializing connection pool...');
 
       // Create minimum connections concurrently
       final connectionFutures =
@@ -46,7 +45,6 @@ class ConnectionPool {
       print(
           '✅ Connection pool initialized with ${_connectionPool.length} connections');
     } catch (e) {
-      print('❌ Failed to initialize connection pool: $e');
       _initCompleter.completeError(e);
       rethrow;
     }
@@ -64,14 +62,11 @@ class ConnectionPool {
         timeout: const Duration(seconds: 20),
       );
 
-      print('🔗 Creating new database connection...');
       final connection = await MySqlConnection.connect(settings);
       _connectionLastUsed[connection] = DateTime.now();
       _connectionPool.add(connection);
-      print('✅ Database connection created successfully');
       return connection;
     } catch (e) {
-      print('❌ Failed to create database connection: $e');
       throw _formatConnectionError(e);
     }
   }
@@ -146,21 +141,17 @@ class ConnectionPool {
           _connectionPool.add(connection);
           _connectionLastUsed[connection] = DateTime.now();
         } else {
-          print('📊 Pool full, closing connection');
           connection.close();
           _connectionLastUsed.remove(connection);
         }
       } else {
-        print('⚠️ Removing unhealthy connection from pool');
         connection.close();
         _connectionLastUsed.remove(connection);
       }
     } catch (e) {
-      print('❌ Error returning connection to pool: $e');
       try {
         connection.close();
       } catch (closeError) {
-        print('❌ Error closing connection: $closeError');
       }
       _connectionLastUsed.remove(connection);
     }
@@ -205,12 +196,10 @@ class ConnectionPool {
       try {
         connection.close();
       } catch (e) {
-        print('❌ Error closing idle connection: $e');
       }
     }
 
     if (toRemove.isNotEmpty) {
-      print('🧹 Cleaned up ${toRemove.length} idle connections');
     }
   }
 
@@ -242,7 +231,6 @@ class ConnectionPool {
 
   /// Clean up all connections
   Future<void> dispose() async {
-    print('🔄 Disposing connection pool...');
 
     _healthCheckTimer?.cancel();
 
@@ -250,13 +238,11 @@ class ConnectionPool {
       try {
         await connection.close();
       } catch (e) {
-        print('❌ Error closing connection: $e');
       }
     }
 
     _connectionPool.clear();
     _connectionLastUsed.clear();
     _isInitialized = false;
-    print('✅ Connection pool disposed');
   }
 }

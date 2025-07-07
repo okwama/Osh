@@ -78,7 +78,6 @@ class UpliftSaleService {
         };
       });
     } catch (e) {
-      print('❌ Error creating uplift sale: $e');
       return {
         'success': false,
         'message': 'Failed to create uplift sale: $e',
@@ -195,7 +194,6 @@ class UpliftSaleService {
 
       return sales;
     } catch (e) {
-      print('❌ Error getting uplift sales: $e');
       rethrow;
     }
   }
@@ -254,7 +252,6 @@ class UpliftSaleService {
         );
       }).toList();
     } catch (e) {
-      print('❌ Error getting uplift sale items: $e');
       return [];
     }
   }
@@ -329,7 +326,6 @@ class UpliftSaleService {
         items: items,
       );
     } catch (e) {
-      print('❌ Error getting uplift sale by ID: $e');
       return null;
     }
   }
@@ -356,7 +352,6 @@ class UpliftSaleService {
       final result = await _db.query(sql, [status, saleId, currentUserId]);
       return (result.affectedRows ?? 0) > 0;
     } catch (e) {
-      print('❌ Error updating uplift sale status: $e');
       return false;
     }
   }
@@ -394,7 +389,6 @@ class UpliftSaleService {
         return (result.affectedRows ?? 0) > 0;
       });
     } catch (e) {
-      print('❌ Error deleting uplift sale: $e');
       return false;
     }
   }

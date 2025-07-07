@@ -88,7 +88,6 @@ class _LeaveApplicationPageState extends State<LeaveApplicationPage> {
       }
 
       if (staffId == null || staffId == 0) {
-        print('⚠️ No valid user ID found for leave balances');
         return;
       }
 
@@ -101,7 +100,6 @@ class _LeaveApplicationPageState extends State<LeaveApplicationPage> {
         };
       });
     } catch (e) {
-      print('Failed to load leave balances: $e');
     }
   }
 
@@ -236,12 +234,9 @@ class _LeaveApplicationPageState extends State<LeaveApplicationPage> {
       String? cloudinaryUrl;
       if (_attachedFile != null && !kIsWeb) {
         try {
-          print('📤 Uploading document to Cloudinary...');
           final uploadResult = await UploadService.uploadImage(_attachedFile!);
           cloudinaryUrl = uploadResult['url'];
-          print('✅ Document uploaded successfully: $cloudinaryUrl');
         } catch (e) {
-          print('❌ Failed to upload document: $e');
         }
       }
 
@@ -873,4 +868,3 @@ class _LeaveApplicationPageState extends State<LeaveApplicationPage> {
     );
   }
 }
-

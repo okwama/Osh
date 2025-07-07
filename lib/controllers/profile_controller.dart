@@ -72,18 +72,15 @@ class ProfileController extends GetxController {
         }
       }
 
-      print('🔍 Fetching profile for user ID: $userId (cache miss)');
       final response =
           await AuthService.getProfile(int.parse(userId.toString()));
 
-      print('📋 Profile response: $response');
 
       if (response == null) {
         throw Exception('No response received from AuthService');
       }
 
       final userData = response['salesRep'];
-      print('📋 User data: $userData');
 
       if (userData != null) {
         // Update cache
@@ -95,13 +92,10 @@ class ProfileController extends GetxController {
         // Update storage with full user data
         storage.write('salesRep', userData);
 
-        print('✅ Profile data loaded successfully: ${userData.toString()}');
       } else {
         throw Exception('User data is null in response');
       }
     } catch (e) {
-      print('❌ Error fetching profile: $e');
-      print('📋 Error details: ${e.toString()}');
       Get.snackbar(
         'Error',
         'Failed to fetch profile data: ${e.toString().replaceAll('Exception: ', '')}',
@@ -126,7 +120,6 @@ class ProfileController extends GetxController {
   void clearProfileCache() {
     _cachedProfile = null;
     _lastProfileFetch = null;
-    print('🗑️ Cleared profile cache');
   }
 
   /// Force refresh profile data (bypass cache)
@@ -216,30 +209,25 @@ class ProfileController extends GetxController {
       passwordSuccess.value = '';
       isPasswordUpdating.value = true;
 
-      print('PROFILE CONTROLLER: Starting password update process');
 
       // Validate passwords
       if (currentPassword.isEmpty ||
           newPassword.isEmpty ||
           confirmPassword.isEmpty) {
         passwordError.value = 'All fields are required';
-        print('PROFILE CONTROLLER: Validation failed - Empty fields');
         return;
       }
 
       if (newPassword != confirmPassword) {
         passwordError.value = 'New passwords do not match';
-        print('PROFILE CONTROLLER: Validation failed - Passwords do not match');
         return;
       }
 
       if (newPassword.length < 8) {
         passwordError.value = 'Password must be at least 8 characters long';
-        print('PROFILE CONTROLLER: Validation failed - Password too short');
         return;
       }
 
-      print('PROFILE CONTROLLER: Validation passed, calling API service');
 
       // Get current user ID from storage
       final userId = storage.read('userId');
@@ -256,22 +244,18 @@ class ProfileController extends GetxController {
         confirmPassword: confirmPassword,
       );
 
-      print('PROFILE CONTROLLER: API response received: $result');
 
       if (result['success']) {
         passwordSuccess.value = result['message'];
-        print('PROFILE CONTROLLER: Password update successful');
       } else {
         passwordError.value = result['message'];
         print(
             'PROFILE CONTROLLER: Password update failed: ${result['message']}');
       }
     } catch (e) {
-      print('PROFILE CONTROLLER: Exception during password update: $e');
       passwordError.value = 'An error occurred: ${e.toString()}';
     } finally {
       isPasswordUpdating.value = false;
-      print('PROFILE CONTROLLER: Password update process completed');
     }
   }
 }

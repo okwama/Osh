@@ -72,7 +72,6 @@ class OrderService {
 
       return results.map((row) => MyOrderModel.fromMap(row.fields)).toList();
     } catch (e) {
-      print('❌ Error getting orders: $e');
       rethrow;
     }
   }
@@ -106,7 +105,6 @@ class OrderService {
       // Return order with items (you may need to modify MyOrderModel to include items)
       return order;
     } catch (e) {
-      print('❌ Error getting order by ID: $e');
       rethrow;
     }
   }
@@ -152,7 +150,6 @@ class OrderService {
 
       return orderItems;
     } catch (e) {
-      print('❌ Error getting order items: $e');
       rethrow;
     }
   }
@@ -197,7 +194,6 @@ class OrderService {
 
       return ProductModel.fromMap(productData);
     } catch (e) {
-      print('❌ Error loading product with price options: $e');
       return null;
     }
   }
@@ -310,7 +306,6 @@ class OrderService {
         return null;
       });
     } catch (e) {
-      print('❌ Error creating order: $e');
       rethrow;
     }
   }
@@ -349,7 +344,6 @@ class OrderService {
 
       await _db.query(sql, params);
     } catch (e) {
-      print('❌ Error updating order status: $e');
       rethrow;
     }
   }
@@ -378,7 +372,6 @@ class OrderService {
       }
       return {};
     } catch (e) {
-      print('❌ Error getting order stats: $e');
       rethrow;
     }
   }
@@ -415,7 +408,6 @@ class OrderService {
         'reason': cancelReason,
       };
     } catch (e) {
-      print('❌ Error checking void status: $e');
       return {
         'success': false,
         'message': 'Failed to check void status',
@@ -463,7 +455,6 @@ class OrderService {
         'orderId': orderId,
       };
     } catch (e) {
-      print('❌ Error requesting order void: $e');
       return {
         'success': false,
         'message': 'Failed to submit void request',
@@ -581,7 +572,6 @@ class OrderService {
         };
       });
     } catch (e) {
-      print('❌ Error updating order: $e');
       return {
         'success': false,
         'message': 'Failed to update order: $e',
@@ -609,7 +599,6 @@ class OrderService {
       // Order must be pending (status = 0) and owned by current user
       return status == 0 && currentUserId == orderUserId;
     } catch (e) {
-      print('❌ Error checking order update permission: $e');
       return false;
     }
   }
@@ -677,7 +666,6 @@ class OrderService {
         }
       });
     } catch (e) {
-      print('❌ Error deleting order: $e');
       return {
         'success': false,
         'message': 'Failed to delete order: $e',
@@ -701,7 +689,6 @@ class OrderService {
 
       return results.map((row) => row.fields).toList();
     } catch (e) {
-      print('❌ Error fetching outlets: $e');
       rethrow;
     }
   }

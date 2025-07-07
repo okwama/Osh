@@ -31,7 +31,6 @@ class AuthController extends GetxController {
       await _loadUserFromStorage();
       _isInitialized.value = true;
     } catch (e) {
-      print('❌ Auth controller initialization error: $e');
       _isInitialized.value = true;
     }
   }
@@ -51,26 +50,21 @@ class AuthController extends GetxController {
             _currentUser.value = SalesRepModel.fromMap(userData);
             _currentToken.value = token;
             _isLoggedIn.value = true;
-            print('✅ User loaded from storage: ${_currentUser.value?.name}');
           } catch (e) {
-            print('❌ Error creating user from storage data: $e');
             await _clearStorage();
           }
         } else {
           // Token is invalid, clear storage
-          print('❌ Token is invalid, clearing storage');
           await _clearStorage();
         }
       }
     } catch (e) {
-      print('❌ Load user from storage error: $e');
       await _clearStorage();
     }
   }
 
   Future<void> login(String phoneNumber, String password) async {
     try {
-      print('🔐 AuthController: Starting login process');
 
       final result = await AuthService.login(phoneNumber, password);
 
@@ -93,13 +87,10 @@ class AuthController extends GetxController {
         _currentToken.value = token;
         _isLoggedIn.value = true;
 
-        print('✅ AuthController: Login successful for ${user.name}');
-        print('✅ AuthController: User role: ${user.role}');
       } else {
         throw Exception(result['message'] ?? 'Login failed');
       }
     } catch (e) {
-      print('❌ AuthController login error: $e');
       rethrow;
     }
   }
@@ -120,9 +111,7 @@ class AuthController extends GetxController {
       _currentToken.value = null;
       _isLoggedIn.value = false;
 
-      print('✅ AuthController: Logout successful');
     } catch (e) {
-      print('❌ AuthController logout error: $e');
       rethrow;
     }
   }
@@ -157,7 +146,6 @@ class AuthController extends GetxController {
         throw Exception('Failed to update profile');
       }
     } catch (e) {
-      print('❌ Update profile error: $e');
       rethrow;
     }
   }
@@ -175,7 +163,6 @@ class AuthController extends GetxController {
         newPassword,
       );
     } catch (e) {
-      print('❌ Change password error: $e');
       return false;
     }
   }

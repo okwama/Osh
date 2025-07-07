@@ -20,7 +20,6 @@ class StockService {
     if (_isInitialized) return;
 
     try {
-      print('🏪 Initializing StockService...');
 
       // Get user's region ID
       final userData = GetStorage().read('salesRep');
@@ -28,7 +27,6 @@ class StockService {
 
       if (regionId != null) {
         _userRegionCache[0] = regionId; // Store for current user
-        print('📍 User region ID: $regionId');
       }
 
       // Load products from cache
@@ -45,10 +43,8 @@ class StockService {
             '✅ StockService initialized with ${_productCache.length} products');
         _isInitialized = true;
       } else {
-        print('⚠️ ProductHiveService not available');
       }
     } catch (e) {
-      print('❌ Error initializing StockService: $e');
     }
   }
 
@@ -75,7 +71,6 @@ class StockService {
 
       return storeQuantity.quantity;
     } catch (e) {
-      print('❌ Error getting stock for product $productId: $e');
       return 0;
     }
   }
@@ -145,7 +140,6 @@ class StockService {
             '🔄 StockService cache refreshed with ${_productCache.length} products');
       }
     } catch (e) {
-      print('❌ Error refreshing StockService cache: $e');
     }
   }
 

@@ -36,7 +36,6 @@ class ProductReturn {
         try {
           return int.parse(value);
         } catch (e) {
-          print('Error parsing integer: $value');
           return 0;
         }
       }

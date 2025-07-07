@@ -29,7 +29,6 @@ class DatabaseAuthService {
 
       return userId is int ? userId : int.parse(userId.toString());
     } catch (e) {
-      print('❌ Error getting current user ID: $e');
       throw Exception('Failed to get current user ID: $e');
     }
   }
@@ -65,10 +64,8 @@ class DatabaseAuthService {
       // Add countryId to payload
       payload['countryId'] = countryId;
       
-      print('⚠️ Token missing countryId - fetched from database: $countryId');
       return payload;
     } catch (e) {
-      print('❌ Error getting current user details: $e');
       throw Exception('Failed to get current user details: $e');
     }
   }
@@ -86,7 +83,6 @@ class DatabaseAuthService {
       if (results.isEmpty) return null;
       return results.first['countryId'] as int?;
     } catch (e) {
-      print('❌ Error fetching countryId from database: $e');
       return null;
     }
   }
@@ -100,7 +96,6 @@ class DatabaseAuthService {
       );
 
       if (results.isEmpty) {
-        print('❌ User not found: $userId');
         return false;
       }
 
@@ -110,14 +105,11 @@ class DatabaseAuthService {
 
       // Check if user is active
       if (status != 1) {
-        print('❌ User is not active: $userId');
         return false;
       }
 
-      print('✅ User permissions validated for $userId, role: $role');
       return true;
     } catch (e) {
-      print('❌ Error validating user permissions: $e');
       return false;
     }
   }
@@ -143,7 +135,6 @@ class DatabaseAuthService {
         'isActive': (row['status'] as int? ?? 0) == 1,
       };
     } catch (e) {
-      print('❌ Error getting user role: $e');
       return null;
     }
   }
@@ -156,7 +147,6 @@ class DatabaseAuthService {
 
       return userRole['role'] == requiredRole && userRole['isActive'] == true;
     } catch (e) {
-      print('❌ Error checking user role: $e');
       return false;
     }
   }
@@ -190,7 +180,6 @@ class DatabaseAuthService {
 
       return results.first['id'] as int;
     } catch (e) {
-      print('❌ Error getting sales rep ID: $e');
       return null;
     }
   }
@@ -223,7 +212,6 @@ class DatabaseAuthService {
         'isActive': userRole['isActive'],
       };
     } catch (e) {
-      print('❌ Error validating token: $e');
       return null;
     }
   }
@@ -250,7 +238,6 @@ class DatabaseAuthService {
               })
           .toList();
     } catch (e) {
-      print('❌ Error getting user accessible regions: $e');
       return [];
     }
   }
@@ -277,7 +264,6 @@ class DatabaseAuthService {
               })
           .toList();
     } catch (e) {
-      print('❌ Error getting user accessible stores: $e');
       return [];
     }
   }
@@ -297,7 +283,6 @@ class DatabaseAuthService {
 
       return results.first['count'] as int > 0;
     } catch (e) {
-      print('❌ Error checking store access: $e');
       return false;
     }
   }
@@ -316,7 +301,6 @@ class DatabaseAuthService {
 
       return results.first['countryId'] as int;
     } catch (e) {
-      print('❌ Error getting user country ID: $e');
       return null;
     }
   }

@@ -181,31 +181,26 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
   Future<void> _checkIn() async {
     // Prevent race conditions
     if (_isCheckingIn) {
-      print('Check-in already in progress');
       return;
     }
 
     try {
-      print('?? Starting optimistic check-in process...');
       setState(() {
         _isCheckingIn = true;
       });
 
       // Validation checks
       if (widget.journeyPlan.status == JourneyPlan.statusInProgress) {
-        print('?? Already checked in to this visit');
         return;
       }
 
       // Get location with fallback
       if (_currentPosition == null) {
-        print('?? Getting current position...');
         await _getCurrentPosition();
         // _getCurrentPosition now handles all fallbacks silently
       }
 
       // Take photo
-      print('?? Opening camera...');
       final ImagePicker picker = ImagePicker();
       final XFile? image = await picker.pickImage(
         source: ImageSource.camera,
@@ -215,13 +210,10 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
       );
 
       if (image == null) {
-        print('? No image captured');
         return;
       }
-      print('?? Image captured: ${image.path}');
 
       // Show brief loading indicator for photo processing
-      print('? Showing brief loading indicator...');
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -284,12 +276,10 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
 
       // Update parent immediately with optimistic data
       if (widget.onCheckInSuccess != null) {
-        print('?? Optimistic UI update - notifying parent immediately');
         widget.onCheckInSuccess!(optimisticPlan);
       }
 
       // Navigate immediately to reports page
-      print('?? Navigating to reports page immediately (optimistic)');
       Get.off(
         () => ReportsOrdersPage(
           journeyPlan: optimisticPlan,
@@ -299,10 +289,8 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
       );
 
       // Process background sync
-      print('?? Starting background sync...');
       _processCheckInInBackground(File(image.path), optimisticPlan);
     } catch (e) {
-      print('? Check-in error: $e');
       // Silent error handling - continue with optimistic data
     } finally {
       if (mounted) {
@@ -317,11 +305,9 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
   Future<void> _processCheckInInBackground(
       File imageFile, JourneyPlan optimisticPlan) async {
     try {
-      print('?? Background: Starting API sync...');
 
       // Check network and session
       if (!_isNetworkAvailable) {
-        print('Background: Network unavailable - scheduling retry');
         _scheduleRetry(
             () => _processCheckInInBackground(imageFile, optimisticPlan),
             operationName: 'background-sync');
@@ -329,7 +315,6 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
       }
 
       if (!_isSessionValid) {
-        print('Background: Session invalid - attempting to refresh');
         await _checkNetworkAndSession();
         if (!_isSessionValid) {
           print(
@@ -341,18 +326,14 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
       // Upload image in background
       String? imageUrl;
       try {
-        print('Background: Uploading check-in image...');
         final uploadResult = await UploadService.uploadImage(imageFile);
         imageUrl = uploadResult['url'] as String?;
-        print('Background: Image uploaded: $imageUrl');
       } catch (e) {
-        print('Background: ? Image upload failed: $e');
         imageUrl = null;
       }
 
       // Update journey plan in background
       try {
-        print('Background: Updating journey plan...');
         final updatedPlan = await JourneyPlanService.updateJourneyPlan(
           journeyId: optimisticPlan.id!,
           clientId: optimisticPlan.client.id,
@@ -362,7 +343,6 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
           longitude: _currentPosition?.longitude,
           checkInTime: optimisticPlan.checkInTime,
         );
-        print('Background: ? Journey plan updated successfully');
         _resetRetry();
 
         // Update parent with real data (silently)
@@ -370,7 +350,6 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
           widget.onCheckInSuccess!(updatedPlan);
         }
       } catch (e) {
-        print('Background: ? Journey plan update failed: $e');
         // Only schedule retry for non-server errors (server errors are handled by the service)
         if (!(e.toString().contains('500') ||
             e.toString().contains('501') ||
@@ -385,7 +364,6 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
         }
       }
     } catch (e) {
-      print('Background: ? Error in background sync: $e');
       // Schedule retry
       _scheduleRetry(
           () => _processCheckInInBackground(imageFile, optimisticPlan),
@@ -412,11 +390,6 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
     // Calculate distance in meters
     double distance = earthRadius * c;
 
-    print('\nDebug - Distance calculation:');
-    print('From: ($lat1, $lon1)');
-    print('To: ($lat2, $lon2)');
-    print('Distance: ${distance.toStringAsFixed(2)} meters');
-    print('Geofence radius: $GEOFENCE_RADIUS_METERS meters');
 
     return distance;
   }
@@ -428,13 +401,11 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
       if (widget.journeyPlan.isCheckedIn ||
           widget.journeyPlan.isInTransit ||
           widget.journeyPlan.isCompleted) {
-        print('Debug - Journey is already checked in or in progress');
         _isWithinGeofence = true;
         return true;
       }
 
       if (_currentPosition == null) {
-        print('Debug - Current position is null');
         return false;
       }
 
@@ -443,15 +414,8 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
       final clientLon = widget.journeyPlan.client.longitude;
 
       // Add debug logging
-      print('\nDebug - Current Position:');
-      print('Latitude: ${_currentPosition!.latitude}');
-      print('Longitude: ${_currentPosition!.longitude}');
-      print('Debug - Client Position:');
-      print('Latitude: $clientLat');
-      print('Longitude: $clientLon');
 
       if (clientLat == null || clientLon == null) {
-        print('Debug - Client coordinates not available');
         return false;
       }
 
@@ -480,7 +444,6 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
 
       return isWithinRange;
     } catch (e) {
-      print('Debug - Error checking geofence: $e');
       return false;
     }
   }
@@ -498,7 +461,6 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          print('Location permissions denied - using fallback');
           _useLocationFallback();
           return;
         }
@@ -507,7 +469,6 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
       // 2. Check services
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        print('Location services disabled - using fallback');
         _useLocationFallback();
         return;
       }
@@ -520,7 +481,6 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
       ).timeout(
         const Duration(seconds: 20), // Additional timeout protection
         onTimeout: () {
-          print('GPS timeout - using fallback');
           throw TimeoutException('GPS timeout');
         },
       );
@@ -529,12 +489,10 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
 
       // 4. Validate position
       if (position.latitude == 0 && position.longitude == 0) {
-        print('Invalid position received - using fallback');
         _useLocationFallback();
         return;
       }
 
-      print('Debug - Got position with accuracy: ${position.accuracy} meters');
 
       setState(() {
         _currentPosition = position;
@@ -544,7 +502,6 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
       await _getAddressFromLatLng(position.latitude, position.longitude);
       await _checkGeofence();
     } catch (e) {
-      print('Debug - Error getting position: $e');
       // Silent fallback - use client coordinates or defaults
       _useLocationFallback();
     } finally {
@@ -558,7 +515,6 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
 
   // Silent location fallback
   void _useLocationFallback() {
-    print('Using location fallback');
 
     if (widget.journeyPlan.client.latitude != null &&
         widget.journeyPlan.client.longitude != null) {
@@ -577,7 +533,6 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
         altitudeAccuracy: 0,
         headingAccuracy: 0,
       );
-      print('Using client coordinates as fallback');
     } else {
       // Use default coordinates
       _currentPosition = Position(
@@ -594,7 +549,6 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
         altitudeAccuracy: 0,
         headingAccuracy: 0,
       );
-      print('Using default coordinates as fallback');
     }
 
     setState(() {
@@ -609,7 +563,6 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
 
     // Only start updates if journey is pending
     if (widget.journeyPlan.isPending) {
-      print('Starting location updates for pending journey');
       _positionStreamSubscription = Geolocator.getPositionStream(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.medium,
@@ -619,11 +572,6 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
         (Position position) {
           // Only update position if widget is still mounted and journey is still pending
           if (mounted && widget.journeyPlan.isPending) {
-            print('\nDebug - New position received:');
-            print('Latitude: ${position.latitude}');
-            print('Longitude: ${position.longitude}');
-            print('Accuracy: ${position.accuracy} meters');
-            print('Previous geofence status: $_isWithinGeofence');
 
             setState(() {
               _currentPosition = position;
@@ -631,16 +579,12 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
 
             // Check geofence and log the result
             _checkGeofence().then((isWithinRange) {
-              print('Debug - Geofence check completed:');
-              print('Is within range: $isWithinRange');
-              print('New geofence status: $_isWithinGeofence');
               print(
                   'Distance to client: ${_distanceToClient.toStringAsFixed(2)} meters\n');
             });
           }
         },
         onError: (error) {
-          print('Error in location stream: $error');
           if (mounted && widget.journeyPlan.isPending) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -750,11 +694,9 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
 
       // Only update if the journey is actually in checked-in status
       if (!widget.journeyPlan.isCheckedIn) {
-        print('Journey not in checked-in status, no need to fix status');
         return;
       }
 
-      print('Fixing journey status: changing from checked-in to in-progress');
 
       // Update to In Progress status
       final inProgressPlan = await JourneyPlanService.updateJourneyPlan(
@@ -767,7 +709,6 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
         widget.onCheckInSuccess!(inProgressPlan);
       }
     } catch (e) {
-      print('Error fixing journey status: $e');
       // Don't show an error to the user as this is a background fix
     }
   }
@@ -784,7 +725,6 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
 
     // Validate inputs
     if (latitude == 0 && longitude == 0) {
-      print('Invalid coordinates: latitude and longitude are both 0');
       setState(() {
         _isFetchingLocation = false;
       });
@@ -792,7 +732,6 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
     }
 
     try {
-      print('Attempting to get address for: $latitude, $longitude');
 
       // Create a fallback address immediately
       final fallbackAddress =
@@ -809,7 +748,6 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
         ).timeout(
           const Duration(seconds: 10),
           onTimeout: () {
-            print('Geocoding timed out');
             throw TimeoutException('Geocoding operation timed out');
           },
         );
@@ -843,12 +781,10 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
             _isFetchingLocation = false;
           });
 
-          print('Successfully retrieved address: $addressText');
           return;
         }
       } catch (geocodingError) {
         // Just log the error and continue to use the fallback
-        print('Geocoding error: $geocodingError');
       }
 
       // If we get here, either the geocoding failed or returned no results
@@ -860,7 +796,6 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
         _isFetchingLocation = false;
       });
     } catch (e) {
-      print('Error in _getAddressFromLatLng: $e');
 
       if (!mounted) return;
 
@@ -877,11 +812,6 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
     if (widget.journeyPlan.latitude != null &&
         widget.journeyPlan.longitude != null) {
       // Add debug logging
-      print('Debug - Using Check-in Location:');
-      print('Journey Plan Latitude: ${widget.journeyPlan.latitude}');
-      print('Journey Plan Longitude: ${widget.journeyPlan.longitude}');
-      print('Client Latitude: ${widget.journeyPlan.client.latitude}');
-      print('Client Longitude: ${widget.journeyPlan.client.longitude}');
 
       // Create a position from the stored coordinates
       _currentPosition = Position(
@@ -948,7 +878,6 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
       // Refresh the journey plan to get updated client data
       await _refreshJourneyStatus();
     } catch (e) {
-      print('Error updating client location: $e');
       Get.snackbar(
         'Error',
         'Failed to update client location',
@@ -1415,7 +1344,6 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
         ),
       );
     } catch (e) {
-      print('Error refreshing journey status: $e');
       if (!mounted) return;
 
       // Handle server errors silently
@@ -1423,7 +1351,6 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
           e.toString().contains('501') ||
           e.toString().contains('502') ||
           e.toString().contains('503')) {
-        print('Server error during refresh - handled silently: $e');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -1601,7 +1528,6 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
       print(
           'Network available: $_isNetworkAvailable, Session valid: $_isSessionValid');
     } catch (e) {
-      print('Error checking network/session: $e');
       // Silent fallback - assume available
       _isNetworkAvailable = true;
       _isSessionValid = true;
@@ -1618,7 +1544,6 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
       // Additional validation can be added here
       return true;
     } catch (e) {
-      print('Session validation error: $e');
       return false;
     }
   }
@@ -1630,7 +1555,6 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
       // This is a placeholder - replace with actual implementation
       return 'valid_token';
     } catch (e) {
-      print('Error getting auth token: $e');
       return null;
     }
   }
@@ -1638,14 +1562,12 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
   // Retry mechanism for failed operations
   void _scheduleRetry(Function operation, {String? operationName}) {
     if (_retryCount >= maxRetries) {
-      print('Max retries reached for $operationName');
       return;
     }
 
     _retryTimer?.cancel();
     _retryTimer = Timer(Duration(seconds: (2 << _retryCount)), () {
       _retryCount++;
-      print('Retrying $operationName (attempt $_retryCount)');
       operation();
     });
   }
@@ -1656,4 +1578,3 @@ class _JourneyViewState extends State<JourneyView> with WidgetsBindingObserver {
     _retryTimer?.cancel();
   }
 }
-

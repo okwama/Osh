@@ -29,7 +29,6 @@ class PaymentService {
 
       return results.map((row) => _mapToClientPayment(row.fields)).toList();
     } catch (e) {
-      print('❌ Error fetching client payments: $e');
       rethrow;
     }
   }
@@ -75,7 +74,6 @@ class PaymentService {
       }
       return createdPayment;
     } catch (e) {
-      print('❌ Error uploading client payment: $e');
       rethrow;
     }
   }
@@ -105,7 +103,6 @@ class PaymentService {
       }
       return null;
     } catch (e) {
-      print('❌ Error fetching payment by ID: $e');
       rethrow;
     }
   }
@@ -132,7 +129,6 @@ class PaymentService {
       }
       return updatedPayment;
     } catch (e) {
-      print('❌ Error updating payment status: $e');
       rethrow;
     }
   }
@@ -174,7 +170,6 @@ class PaymentService {
         'rejected_payments': 0,
       };
     } catch (e) {
-      print('❌ Error fetching payment stats: $e');
       rethrow;
     }
   }

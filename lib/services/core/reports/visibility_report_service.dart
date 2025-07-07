@@ -59,7 +59,6 @@ class VisibilityReportService {
         // Commit transaction
         await _db.query('COMMIT');
 
-        print('✅ VisibilityReport submitted successfully');
 
         // Return simple success report without fetching from database
         return Report(
@@ -91,11 +90,9 @@ class VisibilityReportService {
       } catch (e) {
         // Rollback transaction
         await _db.query('ROLLBACK');
-        print('❌ Transaction rolled back due to error: $e');
         rethrow;
       }
     } catch (e) {
-      print('❌ Error submitting visibility report: $e');
       rethrow;
     }
   }
@@ -135,10 +132,8 @@ class VisibilityReportService {
       params.addAll([reportId, filterUserId]);
 
       final result = await _db.query(sql, params);
-      print('✅ VisibilityReport updated successfully');
       return result.affectedRows! > 0;
     } catch (e) {
-      print('❌ Error updating visibility report: $e');
       return false;
     }
   }

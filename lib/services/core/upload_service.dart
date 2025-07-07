@@ -24,7 +24,6 @@ class UploadService {
         // Compress the image first
         uploadFile = await _compressImage(file);
       } else {
-        print('📤 Detected non-image file: .$ext, skipping compression');
       }
 
       // Read the file
@@ -78,13 +77,10 @@ class UploadService {
           'height': responseMap['height'],
         };
       } else {
-        print('📤 Upload failed with status: ${response.statusCode}');
-        print('📤 Response body: $responseData');
         throw Exception(
             'Upload failed: ${response.statusCode} - $responseData');
       }
     } catch (e) {
-      print('📤 File upload error: $e');
       throw Exception('File upload error: $e');
     }
   }
@@ -172,9 +168,6 @@ class UploadService {
     final bytes = utf8.encode(stringToSign);
     final digest = sha1.convert(bytes);
 
-    print('📸 Signature string: $signatureString');
-    print('📸 String to sign: $stringToSign');
-    print('📸 Generated signature: $digest');
 
     return digest.toString();
   }
@@ -185,13 +178,9 @@ class UploadService {
       // Use proper JSON parsing
       final Map<String, dynamic> result = json.decode(responseData);
 
-      print('📸 Upload response parsed successfully');
-      print('📸 Secure URL: ${result['secure_url']}');
-      print('📸 Public ID: ${result['public_id']}');
 
       return result;
     } catch (e) {
-      print('📸 Failed to parse response: $responseData');
       throw Exception('Failed to parse upload response: $e');
     }
   }
@@ -242,7 +231,6 @@ class UploadService {
 
       return response.statusCode == 200;
     } catch (e) {
-      print('Error deleting image: $e');
       return false;
     }
   }
@@ -263,12 +251,7 @@ class UploadService {
       'api_key': CloudinaryConfig.apiKey,
     };
 
-    print('🧪 Testing signature generation...');
-    print('🧪 Test fields: $testFields');
 
     final signature = _generateSignature(testFields);
-    print('🧪 Generated signature: $signature');
-    print('🧪 Signature length: ${signature.length}');
-    print('🧪 Test complete');
   }
 }

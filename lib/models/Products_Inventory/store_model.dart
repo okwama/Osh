@@ -17,7 +17,6 @@ class Store {
 
   factory Store.fromJson(Map<String, dynamic> json) {
     try {
-      print('[Store] Parsing JSON: $json');
       return Store(
         id: json['id'] ?? 0,
         name: json['name'] ?? '',
@@ -27,9 +26,6 @@ class Store {
         status: json['status'] ?? 0,
       );
     } catch (e, stackTrace) {
-      print('[Store] Error parsing JSON: $e');
-      print('[Store] Stack trace: $stackTrace');
-      print('[Store] Problematic JSON: $json');
       rethrow;
     }
   }

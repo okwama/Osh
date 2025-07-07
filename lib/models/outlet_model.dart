@@ -35,7 +35,6 @@ class Outlet {
 
   factory Outlet.fromJson(Map<String, dynamic> json) {
     // Debug logging
-    print('Outlet.fromJson - Raw JSON: $json');
 
     // Safe parsing helper functions
     double? parseDouble(dynamic value) {

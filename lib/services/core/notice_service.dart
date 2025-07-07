@@ -34,7 +34,6 @@ class NoticeService {
         );
       }).toList();
     } catch (e) {
-      print('❌ Error getting notices: $e');
       rethrow;
     }
   }
@@ -68,7 +67,6 @@ class NoticeService {
         countryId: fields['countryId'],
       );
     } catch (e) {
-      print('❌ Error getting notice by ID: $e');
       return null;
     }
   }
@@ -102,7 +100,6 @@ class NoticeService {
         };
       }
     } catch (e) {
-      print('❌ Error creating notice: $e');
       return {
         'success': false,
         'message': 'Failed to create notice: $e',
@@ -153,7 +150,6 @@ class NoticeService {
       final result = await _db.query(sql, params);
       return (result.affectedRows ?? 0) > 0;
     } catch (e) {
-      print('❌ Error updating notice: $e');
       return false;
     }
   }
@@ -167,7 +163,6 @@ class NoticeService {
       final result = await _db.query(sql, [id]);
       return (result.affectedRows ?? 0) > 0;
     } catch (e) {
-      print('❌ Error deleting notice: $e');
       return false;
     }
   }
@@ -185,7 +180,6 @@ class NoticeService {
       final results = await _db.query(sql, [days]);
       return results.first['count'] ?? 0;
     } catch (e) {
-      print('❌ Error getting recent notices count: $e');
       return 0;
     }
   }
@@ -203,7 +197,6 @@ class NoticeService {
       final results = await _db.query(sql, [lastReadTime.toIso8601String()]);
       return results.first['count'] ?? 0;
     } catch (e) {
-      print('❌ Error getting unread notices count: $e');
       return 0;
     }
   }

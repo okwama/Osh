@@ -79,7 +79,6 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
           e.toString().contains('501') ||
           e.toString().contains('502') ||
           e.toString().contains('503')) {
-        print('Server error during payment fetch - handled silently: $e');
       } else {
         setState(() {
           _errorMessage = 'Failed to load payments. Please try again.';
@@ -99,7 +98,6 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
         _clientStockEnabled = isEnabled;
       });
     } catch (e) {
-      print('Error checking client stock feature status: $e');
       // Default to enabled if we can't check the status or endpoint doesn't exist
       setState(() {
         _clientStockEnabled = true;
@@ -236,7 +234,6 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
                                     setState(() => pickedFile = file);
                                   }
                                 } catch (e) {
-                                  print('Error picking image: $e');
                                   setState(() {
                                     errorMessage =
                                         'Failed to select image. Please try again.';
@@ -302,7 +299,6 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
                               );
                             }
                           } catch (e) {
-                            print('Error uploading payment: $e');
                             // Handle server errors silently
                             if (e.toString().contains('500') ||
                                 e.toString().contains('501') ||
@@ -899,4 +895,3 @@ class _PaymentHistoryCardState extends State<PaymentHistoryCard> {
     }
   }
 }
-

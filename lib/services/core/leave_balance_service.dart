@@ -11,7 +11,6 @@ class LeaveBalanceService {
     try {
       const employeeTypeId = 2; // sales_rep
 
-      print('🔍 Loading leave balances for staff ID: $staffId, year: $year');
 
       // First, get all approved leave requests for this staff member in the given year
       const approvedLeaveSql = '''
@@ -33,7 +32,6 @@ class LeaveBalanceService {
         final leaveTypeId = fields['leave_type_id'];
         final usedDays = (fields['total_used_days'] ?? 0).toDouble();
         actualUsedDays[leaveTypeId] = usedDays;
-        print('📊 Actual used days for leave type $leaveTypeId: $usedDays');
       }
 
       // Single query with LEFT JOIN to get all leave types and existing balances
@@ -54,7 +52,6 @@ class LeaveBalanceService {
       final queryResults =
           await _db.query(sql, [employeeTypeId, staffId, year]);
 
-      print('🔍 Leave balance query results: ${queryResults.length} rows');
 
       final results = queryResults.map((row) {
         final fields = row.fields;
@@ -111,7 +108,6 @@ class LeaveBalanceService {
           '✅ Processed ${results.length} leave balance records with accurate used calculations');
       return results;
     } catch (e) {
-      print('❌ Get staff leave balances error: $e');
       rethrow;
     }
   }
@@ -154,7 +150,6 @@ class LeaveBalanceService {
 
       return balances;
     } catch (e) {
-      print('❌ Get employee leave balance error: $e');
       rethrow;
     }
   }
@@ -211,7 +206,6 @@ class LeaveBalanceService {
             '✅ Created default leave balance for employee $employeeId, leave type $leaveTypeId with ${daysPerYear} days');
       }
     } catch (e) {
-      print('❌ Error ensuring leave balance: $e');
       // Don't throw error to avoid blocking leave application
     }
   }
@@ -226,9 +220,6 @@ class LeaveBalanceService {
     required bool isHalfDay,
   }) async {
     try {
-      print('🔍 Updating balance for approved leave');
-      print('   - Employee: $employeeId, Leave Type: $leaveTypeId');
-      print('   - Start: $startDate, End: $endDate, Half Day: $isHalfDay');
 
       // Start transaction
       await _db.query('START TRANSACTION');
@@ -246,9 +237,6 @@ class LeaveBalanceService {
         // Determine year from start_date
         final year = startDate.year;
 
-        print('📊 Leave calculation:');
-        print('   - Applied days: $appliedDays');
-        print('   - Year: $year');
 
         // Get or create leave balance record
         const getBalanceSql = '''
@@ -284,7 +272,6 @@ class LeaveBalanceService {
 
           await _db.query(createBalanceSql,
               [employeeTypeId, employeeId, leaveTypeId, year]);
-          print('✅ Created default leave balance for year $year');
         }
 
         // Calculate new balance
@@ -292,13 +279,6 @@ class LeaveBalanceService {
         final totalAvailable = currentAccrued + currentCarriedForward;
         final newAvailable = totalAvailable - newUsed;
 
-        print('📊 Balance calculation:');
-        print('   - Current accrued: $currentAccrued');
-        print('   - Current used: $currentUsed');
-        print('   - Current carried forward: $currentCarriedForward');
-        print('   - Total available: $totalAvailable');
-        print('   - New used: $newUsed');
-        print('   - New available: $newAvailable');
 
         // Update leave balance
         if (balanceExists) {
@@ -325,10 +305,6 @@ class LeaveBalanceService {
         // Commit transaction
         await _db.query('COMMIT');
 
-        print('✅ Balance updated successfully');
-        print('📊 Final balance:');
-        print('   - New used: $newUsed');
-        print('   - New available: $newAvailable');
 
         return {
           'success': true,
@@ -342,11 +318,9 @@ class LeaveBalanceService {
         };
       } catch (e) {
         await _db.query('ROLLBACK');
-        print('❌ Error in balance update transaction: $e');
         rethrow;
       }
     } catch (e) {
-      print('❌ Update balance on approval error: $e');
       return {
         'success': false,
         'message': 'Failed to update balance: $e',
@@ -395,7 +369,6 @@ class LeaveBalanceService {
     try {
       const employeeTypeId = 2; // sales_rep
 
-      print('🔄 Syncing leave balances for staff ID: $staffId, year: $year');
 
       // Get all approved leave requests for this staff member in the given year
       const approvedLeaveSql = '''
@@ -429,9 +402,7 @@ class LeaveBalanceService {
             '✅ Updated leave balance for type $leaveTypeId: used = $actualUsed days');
       }
 
-      print('✅ Leave balance sync completed');
     } catch (e) {
-      print('❌ Error syncing leave balances: $e');
     }
   }
 }

@@ -9,7 +9,6 @@ class GlobalErrorHandler {
 
   /// Main error handler - filters all errors and shows user-friendly messages
   static void handleApiError(dynamic error, {bool showToast = true}) {
-    print('Global error handler: $error');
 
     // Never show raw errors to users
     final userFriendlyMessage = getUserFriendlyMessage(error);
@@ -233,7 +232,6 @@ class GlobalErrorHandler {
   /// Log errors safely (for debugging only)
   static void logError(dynamic error, {String? context}) {
     final contextStr = context != null ? ' [$context]' : '';
-    print('❌ Error$contextStr: $error');
 
     // In production, you might want to send this to a logging service
     // but never expose raw errors to users

@@ -18,7 +18,6 @@ class FeedbackReport {
   }
 
   factory FeedbackReport.fromJson(dynamic jsonData) {
-    print('FeedbackReport.fromJson input: $jsonData (${jsonData.runtimeType})');
 
     // Convert dynamic Map to Map<String, dynamic>
     final map = Map<String, dynamic>.from(jsonData);

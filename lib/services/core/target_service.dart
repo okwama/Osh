@@ -10,7 +10,6 @@ class TargetService {
     String? date,
   }) async {
     try {
-      print('🔍 Getting daily visit targets for user: $userId, date: $date');
 
       final targetDate = date ?? DateTime.now().toIso8601String().split('T')[0];
 
@@ -22,7 +21,6 @@ class TargetService {
 
       final userResults = await _db.query(userSql, [userId]);
       if (userResults.isEmpty) {
-        print('⚠️ No user found with ID: $userId');
         return {
           'visitTarget': 0,
           'completedVisits': 0,
@@ -65,7 +63,6 @@ class TargetService {
         'date': targetDate,
       };
     } catch (e) {
-      print('❌ Error getting daily visit targets: $e');
       return {
         'visitTarget': 0,
         'completedVisits': 0,
@@ -81,7 +78,6 @@ class TargetService {
   static Future<List<dynamic>> getMonthlyVisits(
       {required String userId}) async {
     try {
-      print('🔍 Getting monthly visits for user: $userId');
 
       // Get visits for the last 30 days from Report table
       const visitsSql = '''
@@ -125,10 +121,8 @@ class TargetService {
         });
       }
 
-      print('✅ Monthly visits retrieved: ${visits.length} days');
       return visits;
     } catch (e) {
-      print('❌ Error getting monthly visits: $e');
       return [];
     }
   }
@@ -150,7 +144,6 @@ class TargetService {
 
       final userResults = await _db.query(userSql, [userId]);
       if (userResults.isEmpty) {
-        print('⚠️ No user found with ID: $userId');
         return {
           'newClientsTarget': 0,
           'newClientsAdded': 0,
@@ -216,7 +209,6 @@ class TargetService {
         'period': period,
       };
     } catch (e) {
-      print('❌ Error getting new clients progress: $e');
       return {
         'newClientsTarget': 0,
         'newClientsAdded': 0,
@@ -248,11 +240,9 @@ class TargetService {
       try {
         userResults = await _db.query(userSql, [userId]);
       } catch (e) {
-        print('⚠️ Error getting user targets: $e, using defaults');
         userResults = [];
       }
       if (userResults.isEmpty) {
-        print('⚠️ No user found with ID: $userId');
         return {
           'summary': {
             'vapes': {
@@ -328,7 +318,6 @@ class TargetService {
       try {
         salesResults = await _db.query(salesSql, [userId]);
       } catch (e) {
-        print('⚠️ Error getting sales data: $e, using empty results');
         salesResults = [];
       }
 
@@ -397,7 +386,6 @@ class TargetService {
         'productType': productType,
       };
     } catch (e) {
-      print('❌ Error getting product sales progress: $e');
       return {
         'summary': {
           'vapes': {'target': 0, 'sold': 0, 'progress': 0, 'status': 'Error'},
@@ -417,7 +405,6 @@ class TargetService {
     String period = 'current_month',
   }) async {
     try {
-      print('🔍 Getting dashboard data for user: $userId, period: $period');
 
       // Get all target data
       final visitTargets =
@@ -441,7 +428,6 @@ class TargetService {
           .round();
       final allTargetsAchieved = overallScore >= 100;
 
-      print('✅ Dashboard calculated: overall score=$overallScore%');
 
       return {
         'overallPerformanceScore': overallScore,
@@ -453,7 +439,6 @@ class TargetService {
         'success': true,
       };
     } catch (e) {
-      print('❌ Error getting dashboard: $e');
       return {
         'overallPerformanceScore': 0,
         'allTargetsAchieved': false,
@@ -470,7 +455,6 @@ class TargetService {
     int limit = 20,
   }) async {
     try {
-      print('🔍 Getting targets list, page: $page, limit: $limit');
 
       // Get targets from SalesRep table
       const targetsSql = '''
@@ -545,17 +529,14 @@ class TargetService {
         });
       }
 
-      print('✅ Targets list retrieved: ${targets.length} targets');
       return targets;
     } catch (e) {
-      print('❌ Error getting targets: $e');
       return [];
     }
   }
 
   /// Clear any cached data (placeholder for future caching implementation)
   static void clearCache() {
-    print('🧹 Clearing targets cache (no cache implemented yet)');
     // Future implementation: Clear any cached data
   }
 
@@ -565,7 +546,6 @@ class TargetService {
     String period = 'current_month',
   }) async {
     try {
-      print('🔍 Getting client details for user: $userId, period: $period');
 
       // Get date filter based on period
       String dateFilter;
@@ -617,7 +597,6 @@ class TargetService {
         });
       }
 
-      print('✅ Client details retrieved: ${newClients.length} new clients');
 
       return {
         'newClients': newClients,
@@ -625,7 +604,6 @@ class TargetService {
         'period': period,
       };
     } catch (e) {
-      print('❌ Error getting client details: $e');
       return {
         'newClients': [],
         'totalNewClients': 0,

@@ -27,7 +27,6 @@ class Client extends Outlet {
 
   factory Client.fromJson(Map<String, dynamic> json) {
     // Debug logging
-    print('Client.fromJson - Raw JSON: $json');
 
     // Safe parsing helper functions
     double? parseDouble(dynamic value) {
@@ -38,7 +37,6 @@ class Client extends Outlet {
         try {
           return double.parse(value);
         } catch (e) {
-          print('Client.parseDouble error for value "$value": $e');
           return null;
         }
       }
@@ -57,7 +55,6 @@ class Client extends Outlet {
           }
           return int.parse(value);
         } catch (e) {
-          print('Client.parseInt error for value "$value": $e');
           return null;
         }
       }
@@ -73,14 +70,8 @@ class Client extends Outlet {
     final countryId = parseInt(json['countryId']);
     final addedBy = parseInt(json['added_by']);
 
-    print('Client parsing - id: ${json['id']} -> $id');
-    print('Client parsing - latitude: ${json['latitude']} -> $latitude');
-    print('Client parsing - longitude: ${json['longitude']} -> $longitude');
     print(
         'Client parsing - client_type: ${json['client_type']} -> $clientType');
-    print('Client parsing - region_id: ${json['region_id']} -> $regionId');
-    print('Client parsing - countryId: ${json['countryId']} -> $countryId');
-    print('Client parsing - added_by: ${json['added_by']} -> $addedBy');
 
     return Client(
       id: id,

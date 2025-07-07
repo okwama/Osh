@@ -30,7 +30,6 @@ class ProductReportPage extends StatefulWidget {
       );
       return products;
     } catch (e) {
-      print('Error preloading products: $e');
       return [];
     }
   }
@@ -608,4 +607,3 @@ class _ProductReportPageState extends State<ProductReportPage> {
     );
   }
 }
-
