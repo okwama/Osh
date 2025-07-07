@@ -4,13 +4,17 @@ import 'package:woosh/services/core/leave_balance_service.dart';
 import 'package:get_storage/get_storage.dart';
 
 /// Service for managing leave applications using direct database connections
+/// NOTE: This service is configured for sales reps to show only sick leave
+/// Other leave types are filtered out for sales rep users
 class LeaveService {
   static final DatabaseService _db = DatabaseService.instance;
 
-  /// Get all leave types
+  /// Get all leave types (filtered to show only sick leave for sales reps)
   static Future<List<LeaveType>> getLeaveTypes() async {
     try {
-      const sql = 'SELECT * FROM leave_types ORDER BY name';
+      // For sales reps, only show sick leave
+      const sql =
+          "SELECT * FROM leave_types WHERE name LIKE '%sick%' OR name LIKE '%Sick%' ORDER BY name";
       final results = await _db.query(sql);
 
       return results.map((row) {
@@ -70,7 +74,6 @@ class LeaveService {
       if (salesRepId == null) {
         throw Exception('User not authenticated. Please login again.');
       }
-
 
       // Get leave type details in a single query
       final leaveTypeDetails = await _getLeaveTypeDetails(leaveType);

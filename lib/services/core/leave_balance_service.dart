@@ -2,6 +2,8 @@ import 'package:woosh/services/database_service.dart';
 import 'package:woosh/models/leaves/leave_model.dart';
 
 /// Service for managing leave balances using direct database connections
+/// NOTE: This service is configured for sales reps to show only sick leave
+/// Other leave types are filtered out for sales rep users
 class LeaveBalanceService {
   static final DatabaseService _db = DatabaseService.instance;
 
@@ -10,7 +12,6 @@ class LeaveBalanceService {
       int staffId, int year) async {
     try {
       const employeeTypeId = 2; // sales_rep
-
 
       // First, get all approved leave requests for this staff member in the given year
       const approvedLeaveSql = '''
@@ -46,12 +47,12 @@ class LeaveBalanceService {
         FROM leave_types lt
         LEFT JOIN leave_balances lb ON lt.id = lb.leave_type_id 
           AND lb.employee_type_id = ? AND lb.employee_id = ? AND lb.year = ?
+        WHERE lt.name LIKE '%sick%' OR lt.name LIKE '%Sick%'
         ORDER BY lt.name
       ''';
 
       final queryResults =
           await _db.query(sql, [employeeTypeId, staffId, year]);
-
 
       final results = queryResults.map((row) {
         final fields = row.fields;
@@ -220,7 +221,6 @@ class LeaveBalanceService {
     required bool isHalfDay,
   }) async {
     try {
-
       // Start transaction
       await _db.query('START TRANSACTION');
 
@@ -236,7 +236,6 @@ class LeaveBalanceService {
 
         // Determine year from start_date
         final year = startDate.year;
-
 
         // Get or create leave balance record
         const getBalanceSql = '''
@@ -279,7 +278,6 @@ class LeaveBalanceService {
         final totalAvailable = currentAccrued + currentCarriedForward;
         final newAvailable = totalAvailable - newUsed;
 
-
         // Update leave balance
         if (balanceExists) {
           const updateBalanceSql = '''
@@ -304,7 +302,6 @@ class LeaveBalanceService {
 
         // Commit transaction
         await _db.query('COMMIT');
-
 
         return {
           'success': true,
@@ -369,7 +366,6 @@ class LeaveBalanceService {
     try {
       const employeeTypeId = 2; // sales_rep
 
-
       // Get all approved leave requests for this staff member in the given year
       const approvedLeaveSql = '''
         SELECT 
@@ -401,8 +397,6 @@ class LeaveBalanceService {
         print(
             '✅ Updated leave balance for type $leaveTypeId: used = $actualUsed days');
       }
-
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 }

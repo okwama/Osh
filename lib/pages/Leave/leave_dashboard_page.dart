@@ -9,6 +9,9 @@ import 'package:get_storage/get_storage.dart';
 import 'package:woosh/services/core/leave_balance_service.dart';
 import 'package:woosh/utils/app_theme.dart';
 
+// NOTE: This dashboard is configured for sales reps to show only sick leave
+// Other leave types are filtered out in the services for sales rep users
+
 // Enhanced Color Scheme Constants
 const Color primaryGreen = Color(0xFF87DC75);
 const Color primaryDark = Color(0xFF625D4D);
@@ -44,7 +47,6 @@ class _LeaveDashboardPageState extends State<LeaveDashboardPage> {
     final userId = box.read('userId');
     final userData = box.read('salesRep');
     final token = box.read('authToken');
-
   }
 
   Future<void> _loadDashboardData() async {
@@ -69,7 +71,6 @@ class _LeaveDashboardPageState extends State<LeaveDashboardPage> {
         }
       }
 
-
       if (staffId == null || staffId == 0) {
         setState(() {
           _error = 'No user data found. Please login again.';
@@ -78,18 +79,25 @@ class _LeaveDashboardPageState extends State<LeaveDashboardPage> {
         return;
       }
 
-
       // First sync the leave balances to ensure accuracy
+      // Note: Only sick leave balances will be loaded for sales reps
       await LeaveBalanceService.syncLeaveBalances(staffId, _currentYear);
 
       final results = await Future.wait([
         LeaveBalanceService.getStaffLeaveBalances(staffId, _currentYear)
             .then((balances) {
-          for (final balance in balances) {
+          // Filter to show only sick leave for sales reps
+          final sickLeaveBalances = balances
+              .where((balance) =>
+                  balance.leaveType?.name.toLowerCase().contains('sick') ==
+                  true)
+              .toList();
+
+          for (final balance in sickLeaveBalances) {
             print(
                 '   - ${balance.leaveType?.name}: ${balance.accrued} accrued, ${balance.used} used');
           }
-          return balances
+          return sickLeaveBalances
               .map((balance) => {
                     'balance': balance,
                     'leaveType': balance.leaveType,
@@ -566,7 +574,7 @@ class _LeaveDashboardPageState extends State<LeaveDashboardPage> {
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Text(
-                            'Leave Balances',
+                            'Sick Leave Balance',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -596,7 +604,7 @@ class _LeaveDashboardPageState extends State<LeaveDashboardPage> {
                                     ),
                                     const SizedBox(height: 16),
                                     Text(
-                                      'No Leave Balances',
+                                      'No Sick Leave Balance',
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
@@ -605,7 +613,7 @@ class _LeaveDashboardPageState extends State<LeaveDashboardPage> {
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
-                                      'Your leave balances will appear here once configured.',
+                                      'Your sick leave balance will appear here once configured.',
                                       style: TextStyle(
                                         color: Colors.grey[500],
                                         fontSize: 12,
