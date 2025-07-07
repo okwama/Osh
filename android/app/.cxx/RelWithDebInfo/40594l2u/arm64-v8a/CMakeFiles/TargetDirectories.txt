@@ -1,0 +1,2 @@
+/Users/citlogistics/Documents/Moonsun/WWoosh/woosh/android/app/.cxx/RelWithDebInfo/40594l2u/arm64-v8a/CMakeFiles/edit_cache.dir
+/Users/citlogistics/Documents/Moonsun/WWoosh/woosh/android/app/.cxx/RelWithDebInfo/40594l2u/arm64-v8a/CMakeFiles/rebuild_cache.dir

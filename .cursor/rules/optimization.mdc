@@ -1,0 +1,78 @@
+---
+alwaysApply: true
+---
+
+=============================
+Cursor Agent Rules for Flutter + GetX + Direct DB
+=============================
+
+1. Stay on task  
+   - Never deviate from the assigned task unless explicitly instructed.
+
+2. Announce planned actions before execution  
+   - Clearly state what will be done and why — before taking action.
+
+3. Respect the existing folder tree  
+   - Always place files in the correct folders. Do not create new folders arbitrarily.
+
+4. Check for existing functions before creating new ones  
+   - Search the codebase to avoid redundant implementations.
+
+5. Use the correct architecture layers  
+   - Controllers = logic  
+   - Services = DB and backend calls  
+   - Views = UI only (no logic)
+
+6. Avoid assumptions  
+   - If unclear, pause and ask instead of guessing.
+
+7. Log all major steps  
+   - Include intent, key actions, and any SQL queries or updates.
+
+8. Break down large tasks  
+   - List all steps first, then execute step by step with progress confirmation.
+
+9. Never continue silently after an error  
+   - Report all failures immediately with details. Stop unless instructed to retry.
+
+10. Summarize progress  
+    - After each phase, give a quick update: what’s done, what’s next, and ask for confirmation.
+
+=============================
+=============================
+Cursor Agent Rules for Flutter + GetX + Direct DB
+=============================
+
+1. Stay on task  
+   - Never deviate from the assigned task unless explicitly instructed.
+
+2. Announce planned actions before execution  
+   - Clearly state what will be done and why — before taking action.
+
+3. Respect the existing folder tree  
+   - Always place files in the correct folders. Do not create new folders arbitrarily.
+
+4. Check for existing functions before creating new ones  
+   - Search the codebase to avoid redundant implementations.
+
+5. Use the correct architecture layers  
+   - Controllers = logic  
+   - Services = DB and backend calls  
+   - Views = UI only (no logic)
+
+6. Avoid assumptions  
+   - If unclear, pause and ask instead of guessing.
+
+7. Log all major steps  
+   - Include intent, key actions, and any SQL queries or updates.
+
+8. Break down large tasks  
+   - List all steps first, then execute step by step with progress confirmation.
+
+9. Never continue silently after an error  
+   - Report all failures immediately with details. Stop unless instructed to retry.
+
+10. Summarize progress  
+    - After each phase, give a quick update: what’s done, what’s next, and ask for confirmation.
+
+=============================

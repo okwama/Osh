@@ -1,0 +1,101 @@
+# Cursor Rules for Flutter + GetX + Direct DB Project
+
+## 1. Stay on Task
+- Never deviate from the assigned task unless explicitly instructed
+- Focus on one feature/issue at a time
+- Complete current task before moving to next
+
+## 2. Announce Planned Actions Before Execution
+- Clearly state what will be done and why before taking action
+- Use descriptive commit messages and comments
+- Document major architectural decisions
+
+## 3. Respect the Existing Folder Tree
+- Always place files in the correct folders
+- Do not create new folders arbitrarily
+- Follow the established project structure:
+  - `lib/controllers/` - GetX controllers
+  - `lib/services/core/` - Database and business logic services
+  - `lib/pages/` - UI pages and views
+  - `lib/models/` - Data models
+  - `lib/widgets/` - Reusable UI components
+  - `lib/utils/` - Utility functions and helpers
+
+## 4. Check for Existing Functions Before Creating New Ones
+- Search the codebase to avoid redundant implementations
+- Reuse existing services and utilities
+- Check for similar functionality before creating new methods
+
+## 5. Use the Correct Architecture Layers
+- **Controllers** = Logic (GetX controllers for state management)
+- **Services** = DB and backend calls (direct MySQL connections)
+- **Views** = UI only (no business logic in UI files)
+- **Models** = Data structures and serialization
+
+## 6. Avoid Assumptions
+- If unclear, pause and ask instead of guessing
+- Always verify user permissions and data ownership
+- Implement proper security checks (user isolation, country filtering)
+- Never assume data is safe or valid
+
+## 7. Log All Major Steps
+- Include intent, key actions, and any SQL queries or updates
+- Use descriptive log messages with emojis for easy identification
+- Log errors with context and stack traces
+- Example: `print('🔍 Loading orders with filters: dateFrom=$dateFrom')`
+
+## 8. Break Down Large Tasks
+- List all steps first, then execute step by step
+- Provide progress confirmation after each phase
+- Split complex features into smaller, manageable pieces
+
+## 9. Never Continue Silently After an Error
+- Report all failures immediately with details
+- Stop unless instructed to retry
+- Show user-friendly error messages
+- Implement proper error handling and recovery
+
+## 10. Summarize Progress
+- After each phase, give a quick update
+- State what's done, what's next, and ask for confirmation
+- Provide clear feedback to users for all actions
+
+## Security Guidelines
+- Always filter by current user ID in database queries
+- Implement proper authentication and authorization
+- Use parameterized queries to prevent SQL injection
+- Validate all user inputs
+- Never expose sensitive data in logs or error messages
+
+## Database Guidelines
+- Use direct MySQL connections (no API/server calls)
+- Implement proper connection pooling and error handling
+- Use transactions for multi-step operations
+- Always include user/country filtering for data isolation
+
+## Code Quality Standards
+- Follow Flutter/Dart best practices
+- Use meaningful variable and function names
+- Add proper documentation and comments
+- Implement proper null safety
+- Use consistent formatting and style
+- **If a file gets bigger than 500 lines of code, modularize it**
+  - Break large files into smaller, focused components
+  - Extract reusable widgets into separate files
+  - Split complex services into multiple specialized services
+  - Create utility classes for common functionality
+  - Maintain single responsibility principle
+
+## Testing Guidelines
+- Test all database operations
+- Verify security measures work correctly
+- Test error scenarios and edge cases
+- Ensure proper user data isolation
+
+## Performance Guidelines
+- Implement proper pagination for large datasets
+- Use caching for frequently accessed data
+- Optimize database queries
+- Minimize unnecessary API calls
+
+Remember: Security and data integrity are paramount. Always prioritize user data protection and proper access controls. 

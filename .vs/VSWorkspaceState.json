@@ -1,0 +1,11 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\lib",
+    "\\lib\\pages",
+    "\\lib\\pages\\login",
+    "\\lib\\pages\\notice"
+  ],
+  "SelectedNode": "\\pubspec.lock",
+  "PreviewInSolutionExplorer": false
+}

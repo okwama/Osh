@@ -1,0 +1,20 @@
+{
+  "buildFiles": [
+    "/Users/citlogistics/flutter/packages/flutter_tools/gradle/src/main/groovy/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/Users/citlogistics/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/Users/citlogistics/Documents/Moonsun/WWoosh/woosh/android/app/.cxx/RelWithDebInfo/40594l2u/armeabi-v7a",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/Users/citlogistics/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/Users/citlogistics/Documents/Moonsun/WWoosh/woosh/android/app/.cxx/RelWithDebInfo/40594l2u/armeabi-v7a",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {}
+}
