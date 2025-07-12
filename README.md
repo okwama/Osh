@@ -19,6 +19,7 @@ Woosh is a comprehensive sales management application designed for field sales r
 - **Views** = UI Only (no business logic)
 - **Models** = Data Structures & Serialization
 
+<<<<<<< HEAD
 ### Folder Structure
 ```
 lib/
@@ -232,3 +233,9 @@ flutter analyze
 ---
 
 **Remember**: Security and data integrity are paramount. Always prioritize user data protection and proper access controls.
+=======
+For help getting started with Flutter development, view the
+[online documentation](https://docs.flutter.dev/), which offers tutorials,
+samples, guidance on mobile development, and a full API reference.
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/okwama/Osh?utm_source=oss&utm_medium=github&utm_campaign=okwama%2FOsh&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
+>>>>>>> 4949dc5ebcde7ad1cb894ec94d94031dc371b79b
