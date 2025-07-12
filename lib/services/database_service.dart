@@ -4,6 +4,8 @@ import 'package:woosh/services/database/connection_pool.dart';
 import 'package:woosh/services/database/unified_database_service.dart';
 import 'package:woosh/services/database/pagination_service.dart';
 import 'package:woosh/services/database/auth_service.dart';
+import 'package:woosh/utils/error_handler.dart';
+import 'package:woosh/utils/error_logger.dart';
 
 /// Core database service facade that coordinates between specialized services
 /// Provides a unified interface for database operations
@@ -29,9 +31,11 @@ class DatabaseService {
     try {
       await _connectionPool.initialize();
       _isInitialized = true;
-      print('✅ Database service initialized successfully');
+      ErrorLogger.logSuccess(
+          'Database Service', 'Database service initialized successfully');
     } catch (e) {
-      print('❌ Database service initialization failed: $e');
+      ErrorLogger.logError('Database Service', e,
+          context: 'DatabaseService.initialize');
       _isInitialized = false;
       rethrow;
     }
@@ -45,18 +49,22 @@ class DatabaseService {
       // Handle socket connection issues
       if (e.toString().contains('Socket has been closed') ||
           e.toString().contains('SocketException')) {
-        print('🔌 Socket connection issue detected, attempting recovery...');
+        ErrorLogger.logWarning('Database Connection',
+            'Socket connection issue detected, attempting recovery...',
+            context: 'DatabaseService.query');
 
         // Try to reinitialize the connection pool
         try {
           await _connectionPool.dispose();
           await _connectionPool.initialize();
-          print('✅ Connection pool reinitialized successfully');
+          ErrorLogger.logSuccess('Database Connection',
+              'Connection pool reinitialized successfully');
 
           // Retry the query once
           return await _queryExecutor.execute(sql, values);
         } catch (retryError) {
-          print('❌ Recovery failed: $retryError');
+          ErrorLogger.logError('Database Recovery', retryError,
+              context: 'DatabaseService.query.recovery');
           throw Exception(
               'Database connection failed after recovery attempt: $e');
         }

@@ -14,7 +14,6 @@ class ProductReturnService {
     int? userId,
   }) async {
     try {
-
       final filterUserId = userId ?? _db.getCurrentUserId();
 
       // Start transaction
@@ -98,7 +97,6 @@ class ProductReturnService {
   static Future<List<Report>> getProductReturnReportsByStatus(
       int status) async {
     try {
-
       const sql = '''
         SELECT r.id
         FROM Report r
@@ -130,7 +128,6 @@ class ProductReturnService {
   static Future<void> updateProductReturnStatus(
       int reportId, int status) async {
     try {
-
       const sql = '''
         UPDATE ProductReturn 
         SET status = ? 
@@ -138,6 +135,76 @@ class ProductReturnService {
       ''';
 
       await _db.query(sql, [status, reportId]);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Get product returns by journey plan for controller
+  static Future<List<Report>> getProductReturnsByJourneyPlan(
+      int journeyPlanId) async {
+    try {
+      const sql = '''
+        SELECT r.id
+        FROM Report r
+        JOIN ProductReturn pr ON r.id = pr.reportId
+        WHERE r.type = 'PRODUCT_RETURN' 
+        AND r.journeyPlanId = ?
+        ORDER BY r.createdAt DESC
+      ''';
+
+      final results = await _db.query(sql, [journeyPlanId]);
+      final reportIds = results.map((row) => row.fields['id'] as int).toList();
+
+      // Fetch full report details
+      final reports = <Report>[];
+      for (final reportId in reportIds) {
+        final report = await ReportService.getReportById(reportId);
+        if (report != null) {
+          reports.add(report);
+        }
+      }
+
+      return reports;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Submit product return for controller
+  static Future<Report> submitProductReturn({
+    required int journeyPlanId,
+    required int clientId,
+    required List<ProductReturnItem> productReturnItems,
+    int? userId,
+  }) async {
+    try {
+      // Convert ProductReturn to ProductReturnItem for the service
+      final convertedItems = productReturnItems
+          .map((pr) => ProductReturnItem(
+                productName: pr.productName ?? '',
+                quantity: pr.quantity ?? 0,
+                reason: pr.reason ?? '',
+                imageUrl: pr.imageUrl,
+              ))
+          .toList();
+
+      // Submit using existing service method
+      final report = await submitProductReturnReport(
+        clientId: clientId,
+        productReturnItems: convertedItems,
+        userId: userId,
+      );
+
+      // Update report with journey plan ID
+      const updateSql = '''
+        UPDATE Report 
+        SET journeyPlanId = ? 
+        WHERE id = ?
+      ''';
+      await _db.query(updateSql, [journeyPlanId, report.id]);
+
+      return report;
     } catch (e) {
       rethrow;
     }

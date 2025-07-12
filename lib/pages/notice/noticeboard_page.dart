@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:woosh/services/core/notice_service.dart';
+import 'package:woosh/controllers/noticecontroller/notice_controller.dart';
 import 'package:woosh/models/noticeboard_model.dart';
 import 'package:intl/intl.dart';
 import 'package:woosh/utils/app_theme.dart';
@@ -24,7 +24,8 @@ class _NoticeBoardPageState extends State<NoticeBoardPage> {
 
   Future<List<NoticeBoard>> _loadNotices() async {
     try {
-      return await NoticeService.getNotices();
+      final noticeController = Get.find<NoticeController>();
+      return await noticeController.getNotices();
     } catch (e) {
       _showErrorSnackBar('Failed to load data');
       return [];
@@ -304,4 +305,3 @@ class _NoticeBoardPageState extends State<NoticeBoardPage> {
     );
   }
 }
-

@@ -10,7 +10,6 @@ class LintingFixer {
     'productSample_model.dart': 'product_sample_model.dart',
     'visibilityReport_model.dart': 'visibility_report_model.dart',
     'offlineToast.dart': 'offline_toast.dart',
-    'createJourneyplan.dart': 'create_journey_plan.dart',
     'createJourneyplan_modular.dart': 'create_journey_plan_modular.dart',
     'reportMain_page.dart': 'report_main_page.dart',
     'updateOrder_page.dart': 'update_order_page.dart',

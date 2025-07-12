@@ -325,6 +325,113 @@ class LeaveBalanceService {
     }
   }
 
+  /// Get leave balances for controller
+  static Future<List<Map<String, dynamic>>> getLeaveBalances({
+    int? userId,
+    int? year,
+  }) async {
+    try {
+      final currentYear = year ?? DateTime.now().year;
+      final currentUserId = userId ?? await _getCurrentUserId();
+
+      if (currentUserId == null) {
+        throw Exception('User ID not available');
+      }
+
+      final balances = await getStaffLeaveBalances(currentUserId, currentYear);
+
+      return balances
+          .map((balance) => {
+                'id': balance.id,
+                'leaveTypeName': balance.leaveType?.name ?? 'Unknown',
+                'accrued': balance.accrued,
+                'used': balance.used,
+                'carriedForward': balance.carriedForward,
+                'available':
+                    balance.accrued + balance.carriedForward - balance.used,
+                'year': balance.year,
+              })
+          .toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Get leave balance by ID for controller
+  static Future<Map<String, dynamic>?> getLeaveBalanceById(
+      int balanceId) async {
+    try {
+      const sql = '''
+        SELECT 
+          lb.*, lt.name as leave_type_name, lt.max_days_per_year
+        FROM leave_balances lb
+        LEFT JOIN leave_types lt ON lb.leave_type_id = lt.id
+        WHERE lb.id = ?
+      ''';
+
+      final results = await _db.query(sql, [balanceId]);
+
+      if (results.isEmpty) {
+        return null;
+      }
+
+      final row = results.first.fields;
+      return {
+        'id': row['id'],
+        'employeeTypeId': row['employee_type_id'],
+        'employeeId': row['employee_id'],
+        'leaveTypeId': row['leave_type_id'],
+        'leaveTypeName': row['leave_type_name'],
+        'year': row['year'],
+        'accrued': row['accrued'],
+        'used': row['used'],
+        'carriedForward': row['carried_forward'],
+        'available': (row['accrued'] ?? 0) +
+            (row['carried_forward'] ?? 0) -
+            (row['used'] ?? 0),
+        'maxDaysPerYear': row['max_days_per_year'],
+        'createdAt': row['createdAt'],
+        'updatedAt': row['updatedAt'],
+      };
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Update leave balance for controller
+  static Future<bool> updateLeaveBalance(
+      int balanceId, Map<String, dynamic> balanceData) async {
+    try {
+      const sql = '''
+        UPDATE leave_balances 
+        SET accrued = ?, used = ?, carried_forward = ?, updatedAt = NOW()
+        WHERE id = ?
+      ''';
+
+      final result = await _db.query(sql, [
+        balanceData['accrued'] ?? 0,
+        balanceData['used'] ?? 0,
+        balanceData['carriedForward'] ?? 0,
+        balanceId,
+      ]);
+
+      return true;
+    } catch (e) {
+      print('❌ Error updating leave balance: $e');
+      return false;
+    }
+  }
+
+  /// Get current user ID helper
+  static Future<int?> _getCurrentUserId() async {
+    try {
+      final userDetails = await _db.getCurrentUserDetails();
+      return userDetails?['id'];
+    } catch (e) {
+      return null;
+    }
+  }
+
   /// Parse employee type from ID
   static EmployeeType _parseEmployeeType(dynamic value) {
     if (value == 1) return EmployeeType.STAFF;
@@ -398,7 +505,8 @@ class LeaveBalanceService {
             '✅ Updated leave balance for type $leaveTypeId: used = $actualUsed days');
       }
     } catch (e) {
-      print('❌ Error syncing leave balances for staff $staffId, year $year: $e');
+      print(
+          '❌ Error syncing leave balances for staff $staffId, year $year: $e');
     }
   }
 }

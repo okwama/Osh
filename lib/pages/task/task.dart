@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:woosh/services/core/task_service.dart';
+import 'package:woosh/controllers/taskcontroller/task_controller.dart';
 import 'package:woosh/models/task_model.dart';
 import 'package:woosh/utils/app_theme.dart';
 import 'package:woosh/widgets/gradient_app_bar.dart';
@@ -14,28 +14,16 @@ class TaskPage extends StatefulWidget {
 }
 
 class _TaskPageState extends State<TaskPage> {
-  late Future<List<Task>> _tasksFuture;
-  bool _isLoading = false;
+  late TaskController _taskController;
 
   @override
   void initState() {
     super.initState();
-    _tasksFuture = _loadTasks();
-  }
-
-  Future<List<Task>> _loadTasks() async {
-    try {
-      return await TaskService.getTasks();
-    } catch (e) {
-      _showErrorSnackBar('Failed to load tasks');
-      return [];
-    }
+    _taskController = Get.find<TaskController>();
   }
 
   Future<void> _refreshTasks() async {
-    setState(() {
-      _tasksFuture = _loadTasks();
-    });
+    await _taskController.loadTasks();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Refreshing tasks...'),
@@ -98,9 +86,8 @@ class _TaskPageState extends State<TaskPage> {
 
     if (confirm != true) return;
 
-    setState(() => _isLoading = true);
     try {
-      final success = await TaskService.completeTask(task.id);
+      final success = await _taskController.completeTask(task.id);
       if (success) {
         _showSuccessSnackBar('Task completed successfully');
         _refreshTasks();
@@ -109,8 +96,6 @@ class _TaskPageState extends State<TaskPage> {
       }
     } catch (e) {
       _showErrorSnackBar('Failed to complete task');
-    } finally {
-      setState(() => _isLoading = false);
     }
   }
 
@@ -254,28 +239,15 @@ class _TaskPageState extends State<TaskPage> {
                           ),
                           if (!task.isCompleted)
                             ElevatedButton(
-                              onPressed: _isLoading
-                                  ? null
-                                  : () {
-                                      Get.back();
-                                      _completeTask(task);
-                                    },
+                              onPressed: () {
+                                Get.back();
+                                _completeTask(task);
+                              },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Theme.of(context).primaryColor,
                                 foregroundColor: Colors.white,
                               ),
-                              child: _isLoading
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                                Colors.white),
-                                      ),
-                                    )
-                                  : const Text('Complete Task'),
+                              child: const Text('Complete Task'),
                             ),
                         ],
                       ),
@@ -399,76 +371,51 @@ class _TaskPageState extends State<TaskPage> {
         ],
       ),
       body: SafeArea(
-        child: FutureBuilder<List<Task>>(
-          future: _tasksFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
-            } else if (snapshot.hasError || snapshot.data == null) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      size: 48,
-                      color: Colors.red.shade300,
+        child: Obx(() {
+          if (_taskController.isLoading.value) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          } else if (_taskController.tasks.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.task_alt,
+                    size: 48,
+                    color: Colors.grey.shade300,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No tasks available',
+                    style: TextStyle(
+                      color: Colors.grey.shade700,
+                      fontSize: 16,
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Failed to load tasks',
-                      style: TextStyle(
-                        color: Colors.grey.shade700,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            } else if (snapshot.data!.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.task_alt,
-                      size: 48,
-                      color: Colors.grey.shade300,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No tasks available',
-                      style: TextStyle(
-                        color: Colors.grey.shade700,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            } else {
-              return RefreshIndicator(
-                onRefresh: _refreshTasks,
-                child: ListView.builder(
-                  key: const PageStorageKey('tasks_list'),
-                  padding: const EdgeInsets.all(16.0),
-                  itemCount: snapshot.data!.length,
-                  itemBuilder: (context, index) {
-                    final task = snapshot.data![index];
-                    return Card(
-                      key: ValueKey('task_${task.id}_$index'),
-                      child: _buildTaskCard(task),
-                    );
-                  },
-                ),
-              );
-            }
-          },
-        ),
+                  ),
+                ],
+              ),
+            );
+          } else {
+            return RefreshIndicator(
+              onRefresh: _refreshTasks,
+              child: ListView.builder(
+                key: const PageStorageKey('tasks_list'),
+                padding: const EdgeInsets.all(16.0),
+                itemCount: _taskController.tasks.length,
+                itemBuilder: (context, index) {
+                  final task = _taskController.tasks[index];
+                  return Card(
+                    key: ValueKey('task_${task.id}_$index'),
+                    child: _buildTaskCard(task),
+                  );
+                },
+              ),
+            );
+          }
+        }),
       ),
     );
   }
 }
-

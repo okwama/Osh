@@ -5,7 +5,7 @@ import 'package:woosh/models/Products_Inventory/product_model.dart';
 import 'package:woosh/models/hive/order_model.dart';
 import 'package:woosh/models/Products_Inventory/price_option_model.dart';
 import 'package:woosh/models/order/orderitem_model.dart';
-import 'package:woosh/controllers/cart_controller.dart';
+import 'package:woosh/controllers/cartcontroller/cart_controller.dart';
 import 'package:woosh/pages/order/cart_page.dart';
 import 'package:woosh/utils/app_theme.dart';
 import 'package:woosh/utils/image_utils.dart';
@@ -103,7 +103,15 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       if (mounted) {
         setState(() {});
       }
-    } catch (e) {}
+    } catch (e) {
+      print('❌ Error in ProductDetailPage [_loadCurrencyConfig]: $e');
+      // Add appropriate user-friendly error handling
+      if (mounted) {
+        Get.snackbar(
+            'Error', 'Failed to load currency configuration. Please try again.',
+            backgroundColor: Colors.red, colorText: Colors.white);
+      }
+    }
   }
 
   void _calculateStockAvailability() {

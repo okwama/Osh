@@ -218,7 +218,7 @@ try {
 ### 2. Journey Plan Creation
 
 ```dart
-// In createJourneyplan.dart
+// In createJourneyplan_modular.dart
 try {
   final newJourneyPlan = await EnhancedJourneyPlanService.createJourneyPlan(
     clientId, date, notes: notes, routeId: routeId);

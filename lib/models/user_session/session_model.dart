@@ -91,7 +91,10 @@ class Session {
         final mins = minutes % 60;
         return '${hours}h ${mins}m';
       }
-    } catch (_) {}
+    } catch (e) {
+      // Log parsing error for debugging
+      print('Error parsing duration as minutes: $e');
+    }
 
     // If duration is already in a string format, try to parse it
     try {
@@ -102,7 +105,10 @@ class Session {
         final minutes = int.tryParse(parts[1]) ?? 0;
         return '${hours}h ${minutes}m';
       }
-    } catch (_) {}
+    } catch (e) {
+      // Log parsing error for debugging
+      print('Error parsing duration format: $e');
+    }
 
     return duration!;
   }

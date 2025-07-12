@@ -7,8 +7,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:woosh/models/journeyplan/journeyplan_model.dart';
 import 'package:woosh/models/journeyplan/report/report_model.dart';
 import 'package:woosh/models/journeyplan/report/visibilityReport_model.dart';
-import 'package:woosh/services/core/reports/visibility_report_service.dart';
-import 'package:woosh/services/core/upload_service.dart';
+import 'package:woosh/controllers/reportcontrollers/visibility_report_controller.dart';
+import 'package:woosh/controllers/uploadcontroller/upload_controller.dart';
 import 'package:woosh/utils/app_theme.dart';
 import 'package:woosh/utils/optimistic_ui_handler.dart';
 import 'package:woosh/widgets/gradient_app_bar.dart';
@@ -32,6 +32,9 @@ class VisibilityReportPage extends StatefulWidget {
 class _VisibilityReportPageState extends State<VisibilityReportPage>
     with SingleTickerProviderStateMixin {
   final _commentController = TextEditingController();
+  final VisibilityReportController _visibilityReportController =
+      Get.put(VisibilityReportController());
+  final UploadController _uploadController = Get.put(UploadController());
   bool _isSubmitting = false;
   bool _isUploading = false;
   File? _imageFile;
@@ -166,15 +169,15 @@ class _VisibilityReportPageState extends State<VisibilityReportPage>
       // Update progress
       setState(() => _uploadProgress = 'Uploading image...');
 
-      // Upload compressed image using new UploadService
-      final imageUrl = await UploadService.uploadImage(compressedFile);
+      // Upload compressed image using UploadController
+      final imageUrl = await _uploadController.uploadImage(compressedFile);
       stopwatch.stop();
 
       // Clean up temporary file
       await compressedFile.delete();
 
       setState(() {
-        _imageUrl = imageUrl['url'] as String?;
+        _imageUrl = imageUrl?['url'] as String?;
         _isUploading = false;
         _uploadProgress = null;
       });
@@ -250,7 +253,7 @@ class _VisibilityReportPageState extends State<VisibilityReportPage>
             '📊 Submitting visibility report with image: ${imageUrl != null ? 'Yes' : 'No'}');
 
         // Submit visibility report
-        await VisibilityReportService.submitVisibilityReport(
+        await _visibilityReportController.submitVisibilityReport(
           journeyPlanId: widget.journeyPlan.id!,
           clientId: widget.journeyPlan.client.id,
           comment: _commentController.text.trim(),

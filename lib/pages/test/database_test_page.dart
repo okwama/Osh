@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/database_service.dart';
+import '../../controllers/database_test_controller.dart';
 
 class DatabaseTestPage extends StatefulWidget {
   const DatabaseTestPage({Key? key}) : super(key: key);
@@ -153,7 +153,7 @@ class _DatabaseTestPageState extends State<DatabaseTestPage> {
     });
 
     try {
-      final result = await DatabaseService.instance.testConnection();
+      final result = await DatabaseTestController().testConnection();
       setState(() {
         _connectionTest = result;
         _testResult = result['success'] == true
@@ -178,7 +178,7 @@ class _DatabaseTestPageState extends State<DatabaseTestPage> {
     });
 
     try {
-      final isHealthy = await DatabaseService.instance.isHealthy();
+      final isHealthy = await DatabaseTestController().isHealthy();
       setState(() {
         _testResult = isHealthy
             ? '✅ Health check passed! Database is responding correctly.'

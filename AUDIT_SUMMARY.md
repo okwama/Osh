@@ -51,8 +51,8 @@
 **Status**: 🟡 IN PROGRESS
 
 #### Files Being Modularized:
-- `lib/pages/journeyplan/createJourneyplan.dart` (1202 lines) → Modularized ✅
-- `lib/pages/journeyplan/journeyview.dart` (1428 lines) → Modularized ✅
+- `lib/pages/journeyplan/createJourneyplan_modular.dart` (85 lines) → Modularized ✅
+- `lib/pages/journeyplan/journeyview_modular.dart` (250 lines) → Modularized ✅
 - `lib/pages/order/cart_page.dart` (1163 lines) → Pending
 - `lib/pages/journeyplan/journeyplans_page.dart` (1020 lines) → Pending
 - `lib/pages/profile/profile.dart` (1013 lines) → Pending
@@ -80,7 +80,7 @@ class CreateJourneyPlanPage extends StatefulWidget {
 **Status**: 🟡 IN PROGRESS
 
 #### Files with Business Logic in UI:
-- `lib/pages/journeyplan/createJourneyplan.dart` → Database calls in UI
+- `lib/pages/journeyplan/createJourneyplan_modular.dart` → Database calls in UI
 - `lib/pages/order/cart_page.dart` → Business logic mixed with UI
 - `lib/pages/journeyplan/journeyplans_page.dart` → Direct database queries
 
@@ -152,7 +152,7 @@ class CreateJourneyPlanPage extends StatefulWidget {
 ## 🔄 REMAINING WORK
 
 ### Priority 1: Complete Modularization
-1. ✅ **journeyview.dart** (1428 lines) → Modularized ✅
+1. ✅ **journeyview_modular.dart** (250 lines) → Modularized ✅
 2. **cart_page.dart** (1163 lines) → Extract business logic
 3. **journeyplans_page.dart** (1020 lines) → Modularize
 4. **profile.dart** (1013 lines) → Split components
@@ -192,8 +192,8 @@ class CreateJourneyPlanPage extends StatefulWidget {
 ## 🎯 NEXT STEPS
 
 ### Immediate (This Week)
-1. ✅ Complete modularization of createJourneyplan.dart
-2. 🔄 Start modularization of journeyview.dart
+1. ✅ Complete modularization of createJourneyplan_modular.dart
+2. ✅ Complete modularization of journeyview_modular.dart
 3. 🔄 Begin cart_page.dart refactoring
 4. 🔄 Plan journeyplans_page.dart modularization
 

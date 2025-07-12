@@ -4,7 +4,8 @@ import 'package:woosh/models/journeyplan/journeyplan_model.dart';
 import 'package:woosh/models/journeyplan/report/report_model.dart';
 import 'package:woosh/models/journeyplan/report/feedbackReport_model.dart';
 import 'package:woosh/pages/journeyplan/reports/base_report_page.dart';
-import 'package:woosh/services/core/reports/feedback_report_service.dart';
+import 'package:woosh/controllers/reportcontrollers/feedback_report_controller.dart';
+import 'package:get/get.dart';
 
 class FeedbackPage extends BaseReportPage {
   const FeedbackPage({
@@ -17,6 +18,14 @@ class FeedbackPage extends BaseReportPage {
 }
 
 class _FeedbackPageState extends State<FeedbackPage> with BaseReportPageMixin {
+  late FeedbackReportController _feedbackController;
+
+  @override
+  void initState() {
+    super.initState();
+    _feedbackController = Get.put(FeedbackReportController());
+  }
+
   @override
   Future<void> onSubmit() async {
     if (commentController.text.isEmpty) {
@@ -38,16 +47,16 @@ class _FeedbackPageState extends State<FeedbackPage> with BaseReportPageMixin {
       return;
     }
 
-    // Use the new FeedbackReportService
-    try {
-      await FeedbackReportService.submitFeedbackReport(
+    // Use the controller
+    final success = await _feedbackController.submitFeedbackReport(
       journeyPlanId: widget.journeyPlan.id!,
       clientId: widget.journeyPlan.client.id,
-        comment: commentController.text,
-        userId: salesRepId,
+      comment: commentController.text,
+      userId: salesRepId,
     );
 
-      if (mounted) {
+    if (mounted) {
+      if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Row(
@@ -62,9 +71,7 @@ class _FeedbackPageState extends State<FeedbackPage> with BaseReportPageMixin {
           ),
         );
         resetForm();
-      }
-    } catch (e) {
-      if (mounted) {
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -72,7 +79,7 @@ class _FeedbackPageState extends State<FeedbackPage> with BaseReportPageMixin {
                 Icon(Icons.error_outline, color: Colors.white, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text('Error submitting report: ${e.toString()}'),
+                  child: Text('Error submitting report: ${_feedbackController.errorMessage.value}'),
                 ),
               ],
             ),

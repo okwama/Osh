@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:woosh/models/task_model.dart';
-import 'package:woosh/services/core/task_service.dart';
+import 'package:woosh/controllers/taskcontroller/task_controller.dart';
 import 'package:woosh/utils/app_theme.dart';
 import 'package:woosh/widgets/gradient_app_bar.dart';
 
@@ -14,37 +14,12 @@ class TaskPage extends StatefulWidget {
 }
 
 class _TaskPageState extends State<TaskPage> {
-  List<Task> _tasks = [];
-  bool _isLoading = true;
-  String? _error;
+  late TaskController _taskController;
 
   @override
   void initState() {
     super.initState();
-    _loadTasks();
-  }
-
-  Future<void> _loadTasks() async {
-    try {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
-
-      final tasks = await TaskService.getTasks();
-      if (!mounted) return;
-      setState(() {
-        _tasks = tasks;
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = 'Failed to load tasks: $e';
-        _isLoading = false;
-      });
-    }
+    _taskController = Get.find<TaskController>();
   }
 
   Widget _buildPriorityChip(String priority) {
@@ -109,7 +84,7 @@ class _TaskPageState extends State<TaskPage> {
 
     if (confirmed == true) {
       try {
-        final success = await TaskService.completeTask(task.id);
+        final success = await _taskController.completeTask(task.id);
         if (success) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -119,7 +94,6 @@ class _TaskPageState extends State<TaskPage> {
               ),
             );
           }
-          _loadTasks(); // Reload tasks after completion
         } else {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -152,70 +126,47 @@ class _TaskPageState extends State<TaskPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadTasks,
+            onPressed: () => _taskController.loadTasks(),
             tooltip: 'Refresh',
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 48,
-                        color: Colors.red.shade300,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        _error!,
-                        style: TextStyle(
-                          color: Colors.grey.shade700,
-                          fontSize: 16,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _loadTasks,
-                        child: const Text('Retry'),
-                      ),
-                    ],
+      body: Obx(() {
+        if (_taskController.isLoading.value) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (_taskController.tasks.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.task_alt,
+                  size: 48,
+                  color: Colors.grey.shade300,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No tasks available',
+                  style: TextStyle(
+                    color: Colors.grey.shade700,
+                    fontSize: 16,
                   ),
-                )
-              : _tasks.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.task_alt,
-                            size: 48,
-                            color: Colors.grey.shade300,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No tasks available',
-                            style: TextStyle(
-                              color: Colors.grey.shade700,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _loadTasks,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _tasks.length,
-                        itemBuilder: (context, index) =>
-                            _buildTaskCard(_tasks[index]),
-                      ),
-                    ),
+                ),
+              ],
+            ),
+          );
+        } else {
+          return RefreshIndicator(
+            onRefresh: () => _taskController.loadTasks(),
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _taskController.tasks.length,
+              itemBuilder: (context, index) =>
+                  _buildTaskCard(_taskController.tasks[index]),
+            ),
+          );
+        }
+      }),
     );
   }
 
@@ -292,4 +243,3 @@ class _TaskPageState extends State<TaskPage> {
     );
   }
 }
-

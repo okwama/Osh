@@ -236,7 +236,9 @@ class ConnectionPool {
       _connectionLastUsed.remove(connection);
       try {
         connection.close();
-      } catch (e) {}
+      } catch (e) {
+        print('⚠️ Could not close idle connection: $e');
+      }
     }
 
     if (toRemove.isNotEmpty) {}
@@ -353,7 +355,9 @@ class ConnectionPool {
     for (final connection in _connectionPool) {
       try {
         await connection.close();
-      } catch (e) {}
+      } catch (e) {
+        print('⚠️ Could not close connection during dispose: $e');
+      }
     }
 
     _connectionPool.clear();

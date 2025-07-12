@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:woosh/services/core/client_service.dart';
+import 'package:woosh/controllers/clientcontroler/client_service_controller.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:woosh/models/client/client_model.dart';
@@ -52,8 +52,7 @@ class _AddClientPageState extends State<AddClientPage> {
 
       print(
           '📍 Loaded user data - Country ID: $_countryId, Region: $_region, Region ID: $_regionId');
-    } else {
-    }
+    } else {}
   }
 
   @override
@@ -116,7 +115,7 @@ class _AddClientPageState extends State<AddClientPage> {
       });
 
       try {
-        final clientService = ClientService.instance;
+        final clientController = Get.find<ClientServiceController>();
         // Ensure we have the required country ID
         if (_countryId == null) {
           throw Exception('Country ID is required. Please log in again.');
@@ -125,7 +124,7 @@ class _AddClientPageState extends State<AddClientPage> {
         print(
             '📍 Creating client with Country ID: $_countryId, Region ID: $_regionId');
 
-        final client = await clientService.createClient(
+        final client = await clientController.createClient(
           Client(
             id: 0,
             name: _nameController.text,

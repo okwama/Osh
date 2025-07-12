@@ -1,9 +1,11 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:woosh/services/core/auth_service.dart';
+import 'package:woosh/services/core/session_service.dart';
 import 'package:woosh/models/salerep/sales_rep_model.dart';
 
 class ProfileController extends GetxController {
@@ -75,7 +77,6 @@ class ProfileController extends GetxController {
       final response =
           await AuthService.getProfile(int.parse(userId.toString()));
 
-
       if (response == null) {
         throw Exception('No response received from AuthService');
       }
@@ -91,7 +92,6 @@ class ProfileController extends GetxController {
 
         // Update storage with full user data
         storage.write('salesRep', userData);
-
       } else {
         throw Exception('User data is null in response');
       }
@@ -198,6 +198,19 @@ class ProfileController extends GetxController {
     }
   }
 
+  // Session management methods
+  Future<dynamic> getCurrentSession(int userId) async {
+    return await SessionService.getCurrentSession(userId);
+  }
+
+  Future<Map<String, dynamic>> startSession(int userId) async {
+    return await SessionService.startSession(userId);
+  }
+
+  Future<void> endSession(int sessionId) async {
+    await SessionService.endSession(sessionId);
+  }
+
   Future<void> updatePassword({
     required String currentPassword,
     required String newPassword,
@@ -208,7 +221,6 @@ class ProfileController extends GetxController {
       passwordError.value = '';
       passwordSuccess.value = '';
       isPasswordUpdating.value = true;
-
 
       // Validate passwords
       if (currentPassword.isEmpty ||
@@ -228,7 +240,6 @@ class ProfileController extends GetxController {
         return;
       }
 
-
       // Get current user ID from storage
       final userId = storage.read('userId');
       if (userId == null) {
@@ -244,7 +255,6 @@ class ProfileController extends GetxController {
         confirmPassword: confirmPassword,
       );
 
-
       if (result['success']) {
         passwordSuccess.value = result['message'];
       } else {
@@ -256,6 +266,49 @@ class ProfileController extends GetxController {
       passwordError.value = 'An error occurred: ${e.toString()}';
     } finally {
       isPasswordUpdating.value = false;
+    }
+  }
+
+  /// Clear all app caches
+  Future<void> clearAllCaches() async {
+    try {
+      // Clear image cache
+      ImageCache().clear();
+      ImageCache().clearLiveImages();
+
+      // Clear session cache
+      SessionService.clearCache();
+
+      // Clear profile cache
+      clearProfileCache();
+
+      // Clear GetStorage cache
+      final keys = storage.getKeys();
+      for (final key in keys) {
+        if (key.startsWith('cache_') ||
+            key.startsWith('outlets_') ||
+            key.startsWith('products_') ||
+            key.startsWith('routes_') ||
+            key.startsWith('notices_') ||
+            key.startsWith('clients_') ||
+            key.startsWith('orders_')) {
+          storage.remove(key);
+        }
+      }
+
+      Get.snackbar(
+        'Success',
+        'App cache cleared successfully',
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to clear cache: ${e.toString()}',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     }
   }
 }

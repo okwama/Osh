@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:woosh/models/journeyplan/journeyplan_model.dart';
 import 'package:woosh/models/client/client_model.dart';
 import 'package:woosh/services/database_service.dart';
+import 'package:woosh/services/database/pagination_service.dart';
 
 /// Journey plan service using direct database connections
 class JourneyPlanService {
@@ -420,6 +421,69 @@ class JourneyPlanService {
     try {
       const sql = 'DELETE FROM JourneyPlan WHERE id = ? AND status = 0';
       await _db.query(sql, [journeyId]);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Get current user details
+  static Future<Map<String, dynamic>> getCurrentUserDetails() async {
+    try {
+      return await _db.getCurrentUserDetails();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Get clients for journey plan creation
+  static Future<List<Client>> getClientsForJourneyPlan({
+    int page = 1,
+    int limit = 10000,
+  }) async {
+    try {
+      // Get current user's country ID for filtering
+      final currentUser = await _db.getCurrentUserDetails();
+      final countryId = currentUser['countryId'];
+
+      final result = await PaginationService.instance.fetchOffset(
+        table: 'Clients',
+        page: page,
+        limit: limit,
+        filters: {
+          'countryId': countryId,
+        },
+        additionalWhere: 'countryId IS NOT NULL AND countryId > 0',
+        orderBy: 'id',
+        orderDirection: 'DESC',
+        whereParams: [],
+        columns: [
+          'id',
+          'name',
+          'address',
+          'contact',
+          'latitude',
+          'longitude',
+          'email',
+          'region_id',
+          'region',
+          'countryId',
+        ],
+      );
+
+      return result.items
+          .map((row) => Client(
+                id: row['id'] as int,
+                name: row['name'] as String,
+                address: row['address'] as String? ?? '',
+                contact: row['contact'] as String?,
+                latitude: row['latitude'] as double?,
+                longitude: row['longitude'] as double?,
+                email: row['email'] as String?,
+                regionId: row['region_id'] as int? ?? 0,
+                region: row['region'] as String? ?? '',
+                countryId: row['countryId'] as int? ?? 0,
+              ))
+          .toList();
     } catch (e) {
       rethrow;
     }

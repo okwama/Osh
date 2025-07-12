@@ -5,8 +5,8 @@ import 'package:woosh/models/journeyplan/journeyplan_model.dart';
 import 'package:woosh/models/Products_Inventory/product_model.dart';
 import 'package:woosh/models/journeyplan/report/report_model.dart';
 import 'package:woosh/models/journeyplan/report/productReport_model.dart';
-import 'package:woosh/services/core/reports/product_report_service.dart';
-import 'package:woosh/services/core/product_service.dart';
+import 'package:woosh/controllers/reportcontrollers/product_report_controller.dart';
+import 'package:woosh/controllers/productcontroller/product_controller.dart';
 import 'package:woosh/utils/app_theme.dart';
 import 'package:woosh/widgets/gradient_app_bar.dart';
 
@@ -24,7 +24,8 @@ class ProductReportPage extends StatefulWidget {
 
   static Future<List<ProductModel>> preloadProducts() async {
     try {
-      final products = await ProductService.getProducts(
+      final productController = Get.put(ProductController()); 
+      final products = await productController.getProducts(
         page: 1,
         limit: 20,
       );
@@ -40,6 +41,9 @@ class ProductReportPage extends StatefulWidget {
 
 class _ProductReportPageState extends State<ProductReportPage> {
   final _commentController = TextEditingController();
+  final ProductReportController _productReportController =
+      Get.put(ProductReportController());
+  final ProductController _productController = Get.put(ProductController());
   bool _isSubmitting = false;
   bool _isLoading = true;
   bool _isLoadingMore = false;
@@ -90,8 +94,8 @@ class _ProductReportPageState extends State<ProductReportPage> {
         return;
       }
 
-      // Load from new ProductService
-      final products = await ProductService.getProducts(
+      // Load from ProductController
+      final products = await _productController.getProducts(
         page: 1,
         limit: _pageSize,
       );
@@ -142,7 +146,7 @@ class _ProductReportPageState extends State<ProductReportPage> {
 
     try {
       final nextPage = _currentPage + 1;
-      final moreProducts = await ProductService.getProducts(
+      final moreProducts = await _productController.getProducts(
         page: nextPage,
         limit: _pageSize,
       );
@@ -217,13 +221,17 @@ class _ProductReportPageState extends State<ProductReportPage> {
               ))
           .toList();
 
-      // Use new ProductReportService
-      await ProductReportService.submitProductReport(
+      // Use ProductReportController
+      final success = await _productReportController.submitProductReport(
         journeyPlanId: widget.journeyPlan.id!,
         clientId: widget.journeyPlan.client.id,
         productReports: productReports,
         userId: salesRepId,
       );
+
+      if (!success) {
+        throw Exception('Failed to submit product report');
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

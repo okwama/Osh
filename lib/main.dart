@@ -8,7 +8,7 @@ import 'package:get_storage/get_storage.dart';
 import 'package:woosh/routes/app_routes.dart';
 import 'package:woosh/services/token_service.dart';
 import 'package:woosh/controllers/auth/auth_controller.dart';
-import 'package:woosh/controllers/uplift_cart_controller.dart';
+import 'package:woosh/controllers/upliftcontroler/uplift_cart_controller.dart';
 import 'package:woosh/utils/app_theme.dart';
 import 'package:woosh/utils/hive/hive_initializer.dart';
 import 'package:hive/hive.dart';

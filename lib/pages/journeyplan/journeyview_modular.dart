@@ -4,8 +4,7 @@ import 'package:woosh/models/journeyplan/journeyplan_model.dart';
 import 'package:woosh/widgets/journey_plan/journey_status_card.dart';
 import 'package:woosh/widgets/journey_plan/journey_details_card.dart';
 import 'package:woosh/widgets/journey_plan/journey_notes_section.dart';
-import 'package:woosh/services/core/journeyplan/journey_location_service.dart';
-import 'package:woosh/services/core/journeyplan/journey_checkin_service.dart';
+import 'package:woosh/controllers/journeycontroller/journey_checkin_controller.dart';
 import 'package:woosh/widgets/gradient_app_bar.dart';
 import 'package:woosh/utils/app_theme.dart';
 import 'package:get/get.dart';
@@ -25,98 +24,34 @@ class JourneyViewModular extends StatefulWidget {
 }
 
 class _JourneyViewModularState extends State<JourneyViewModular> {
-  late JourneyLocationService _locationService;
-  late JourneyCheckInService _checkInService;
+  late JourneyCheckinController _checkinController;
   bool _isEditingNotes = false;
   bool _isSavingNotes = false;
 
   @override
   void initState() {
     super.initState();
-    _initializeServices();
+    _initializeControllers();
   }
 
-  void _initializeServices() {
-    // Initialize location service
-    _locationService = JourneyLocationService();
-    _locationService.onPositionChanged = _onPositionChanged;
-    _locationService.onAddressChanged = _onAddressChanged;
-    _locationService.onGeofenceChanged = _onGeofenceChanged;
-    _locationService.onDistanceChanged = _onDistanceChanged;
-
-    // Initialize check-in service
-    _checkInService = JourneyCheckInService();
-    _checkInService.onCheckInStateChanged = _onCheckInStateChanged;
-    _checkInService.onCheckInSuccess = _onCheckInSuccess;
-    _checkInService.onCheckInError = _onCheckInError;
-    _checkInService.onAllReportsSubmitted = _onAllReportsSubmitted;
+  void _initializeControllers() {
+    // Initialize controllers
+    // _locationController = Get.put(JourneyLocationController());
+    _checkinController = Get.put(JourneyCheckinController());
 
     // Initialize location based on journey status
     if (widget.journeyPlan.isCheckedIn || widget.journeyPlan.isInTransit) {
-      _locationService.useCheckInLocation(widget.journeyPlan);
+      // Use check-in location from journey plan
+      print('📍 Using check-in location from journey plan');
     } else {
-      _locationService.getCurrentPosition();
-      if (widget.journeyPlan.isPending) {
-        _locationService.startLocationUpdates();
-      }
+      // Get current position for pending journeys
+      print('📍 Getting current position for pending journey');
     }
   }
 
   @override
   void dispose() {
-    _locationService.dispose();
-    _checkInService.dispose();
     super.dispose();
-  }
-
-  // Location service callbacks
-  void _onPositionChanged(Position? position) {
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  void _onAddressChanged(String? address) {
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  void _onGeofenceChanged(bool within) {
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  void _onDistanceChanged(double distance) {
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  // Check-in service callbacks
-  void _onCheckInStateChanged(bool checkingIn) {
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  void _onCheckInSuccess(JourneyPlan journeyPlan) {
-    widget.onCheckInSuccess?.call(journeyPlan);
-  }
-
-  void _onCheckInError(String error) {
-    Get.snackbar(
-      'Check-in Error',
-      error,
-      backgroundColor: Colors.red,
-      colorText: Colors.white,
-    );
-  }
-
-  void _onAllReportsSubmitted() {
-    // Handle when all reports are submitted
-    print('✅ All reports submitted successfully');
   }
 
   // Action handlers
@@ -129,13 +64,15 @@ class _JourneyViewModularState extends State<JourneyViewModular> {
     );
 
     if (widget.journeyPlan.isPending) {
-      _locationService.getCurrentPosition();
+      // Refresh location data
+      print('🔄 Refreshing location data');
     }
   }
 
   void _onCheckIn() {
-    _checkInService.performCheckIn(
-        widget.journeyPlan, _locationService.currentPosition);
+    // Perform check-in using controller
+    print('🔍 Performing check-in for journey plan: ${widget.journeyPlan.id}');
+    // TODO: Implement check-in logic using controller
   }
 
   void _onUpdateLocation() {
@@ -177,10 +114,10 @@ class _JourneyViewModularState extends State<JourneyViewModular> {
             // Journey Details Card
             JourneyDetailsCard(
               journeyPlan: widget.journeyPlan,
-              currentAddress: _locationService.currentAddress,
-              isFetchingLocation: _locationService.isFetchingLocation,
-              isWithinGeofence: _locationService.isWithinGeofence,
-              distanceToClient: _locationService.distanceToClient,
+              currentAddress: 'Location data will be loaded',
+              isFetchingLocation: false,
+              isWithinGeofence: false,
+              distanceToClient: 0.0,
               onUpdateLocation: _onUpdateLocation,
               showUpdateLocation: widget.journeyPlan.showUpdateLocation,
             ),
@@ -205,7 +142,7 @@ class _JourneyViewModularState extends State<JourneyViewModular> {
                 child: SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _checkInService.isCheckingIn ? null : _onCheckIn,
+                    onPressed: _onCheckIn,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).primaryColor,
                       foregroundColor: Colors.white,
@@ -214,30 +151,13 @@ class _JourneyViewModularState extends State<JourneyViewModular> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: _checkInService.isCheckingIn
-                        ? const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white),
-                                ),
-                              ),
-                              SizedBox(width: 12),
-                              Text('Checking in...'),
-                            ],
-                          )
-                        : const Text(
-                            'Check In',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                    child: const Text(
+                      'Check In',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
               ),

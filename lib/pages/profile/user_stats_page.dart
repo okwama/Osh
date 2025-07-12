@@ -3,14 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:woosh/services/core/session_service.dart';
-import 'package:woosh/services/core/target_service.dart';
+// Remove direct service imports - use controllers instead
 import 'package:percent_indicator/circular_percent_indicator.dart';
+import 'package:woosh/controllers/userstatscontroler/user_stats_controller.dart';
 import 'package:woosh/utils/app_theme.dart' hide CreamGradientCard;
 import 'package:woosh/widgets/gradient_app_bar.dart';
 import 'package:woosh/widgets/gradient_widgets.dart';
 import 'package:woosh/widgets/cream_gradient_card.dart';
-import 'package:woosh/controllers/profile_controller.dart';
+import 'package:woosh/controllers/profilecontroller/profile_controller.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -23,6 +23,7 @@ class UserStatsPage extends StatefulWidget {
 
 class _UserStatsPageState extends State<UserStatsPage> {
   final ProfileController _profileController = Get.find<ProfileController>();
+  final UserStatsController _userStatsController = UserStatsController();
   String _selectedPeriod = 'week';
   bool _isLoading = false;
   String? _error;
@@ -80,10 +81,10 @@ class _UserStatsPageState extends State<UserStatsPage> {
   Future<void> _fetchAndCacheData(
       String startDate, String endDate, String cacheKey) async {
     try {
-      final loginResponse = await SessionService.getCurrentSession(
+      final loginResponse = await _userStatsController.getCurrentSession(
         int.parse(_userId!),
       );
-      final journeyResponse = await TargetService.getDailyVisitTargets(
+      final journeyResponse = await _userStatsController.getDailyVisitTargets(
         userId: _userId!,
       );
 
@@ -109,6 +110,8 @@ class _UserStatsPageState extends State<UserStatsPage> {
         };
       }
     } catch (e) {
+      // Silently ignore precaching errors - this is optional background work
+      // that shouldn't affect the main functionality
     }
   }
 
@@ -312,7 +315,6 @@ class _UserStatsPageState extends State<UserStatsPage> {
             '?startDate=${dateRange['start']}&endDate=${dateRange['end']}';
       }
 
-
       // Clear cache for this specific key
       final cacheKey = '${_userId}_$urlParams';
       _cache.remove(cacheKey);
@@ -322,9 +324,9 @@ class _UserStatsPageState extends State<UserStatsPage> {
 
       // Load data in parallel
       final responses = await Future.wait([
-        SessionService.getSessionHistory(_userId!,
-            startDate: dateRange['start'], endDate: dateRange['end']),
-        TargetService.getDailyVisitTargets(userId: _userId!),
+        _userStatsController.getSessionHistory(_userId!,
+            startDate: dateRange['start']!, endDate: dateRange['end']!),
+        _userStatsController.getDailyVisitTargets(userId: _userId!),
       ]);
 
       final sessionHistoryResponse = responses[0];
@@ -381,10 +383,8 @@ class _UserStatsPageState extends State<UserStatsPage> {
           'completionRate': '0%'
         };
 
-
         // Validate and process the data
         if (_isValidData(loginData) && _isValidJourneyData(journeyData)) {
-
           // Cache the data
           _cache[cacheKey] = {
             'loginData': loginData,

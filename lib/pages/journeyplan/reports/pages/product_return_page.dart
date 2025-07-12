@@ -9,9 +9,9 @@ import 'package:woosh/models/Products_Inventory/product_model.dart';
 import 'package:woosh/models/journeyplan/report/productReturn_model.dart';
 import 'package:woosh/models/journeyplan/report/product_return_item_model.dart';
 import 'package:woosh/models/journeyplan/report/report_model.dart';
-import 'package:woosh/services/core/reports/product_return_service.dart';
-import 'package:woosh/services/core/product_service.dart';
-import 'package:woosh/services/core/upload_service.dart';
+  import 'package:woosh/controllers/reportcontrollers/product_return_controller.dart';
+import 'package:woosh/controllers/productcontroller/product_controller.dart';
+import 'package:woosh/controllers/uploadcontroller/upload_controller.dart';
 import 'package:woosh/utils/app_theme.dart';
 import 'package:woosh/widgets/gradient_app_bar.dart';
 
@@ -32,6 +32,10 @@ class ProductReturnPage extends StatefulWidget {
 class _ProductReturnPageState extends State<ProductReturnPage> {
   final _quantityController = TextEditingController();
   final _reasonController = TextEditingController();
+  final ProductReturnController _productReturnController =
+      Get.put(ProductReturnController());
+  final ProductController _productController = Get.put(ProductController());
+  final UploadController _uploadController = Get.put(UploadController());
   bool _isSubmitting = false;
   bool _isLoading = true;
   ProductModel? _selectedProduct;
@@ -46,7 +50,7 @@ class _ProductReturnPageState extends State<ProductReturnPage> {
 
   Future<void> _loadProducts() async {
     try {
-      final products = await ProductService.getProducts(
+      final products = await _productController.getProducts(
         page: 1,
         limit: 1000,
       );
@@ -147,12 +151,25 @@ class _ProductReturnPageState extends State<ProductReturnPage> {
         );
       }).toList();
 
-      // Use new ProductReturnService to submit report
-      await ProductReturnService.submitProductReturnReport(
-              clientId: widget.client.id, // Use the id from the outlet as clientId
-        productReturnItems: items,
+      // Use ProductReturnController to submit report
+      final success = await _productReturnController.submitProductReturn(
+        journeyPlanId: 0, // This page doesn't have journey plan context
+        clientId: widget.client.id,
+        productReturnItems: items
+            .map((item) => ProductReturnItem(
+                  reportId: 0,
+                  productName: item.productName,
+                  quantity: item.quantity,
+                  reason: item.reason,
+                  imageUrl: item.imageUrl,
+                ))
+            .toList(),
         userId: salesRepId,
       );
+
+      if (!success) {
+        throw Exception('Failed to submit product return report');
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -576,4 +593,3 @@ class _ProductReturnPageState extends State<ProductReturnPage> {
     super.dispose();
   }
 }
-

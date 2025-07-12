@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:woosh/services/core/task_service.dart';
+// Remove direct service import - use controller instead
 import 'package:woosh/models/task_model.dart';
+import 'package:woosh/controllers/taskcontroller/task_controller.dart';
 import 'package:woosh/utils/app_theme.dart';
 import 'package:woosh/widgets/gradient_app_bar.dart';
 
@@ -13,27 +14,16 @@ class TaskHistoryPage extends StatefulWidget {
 }
 
 class _TaskHistoryPageState extends State<TaskHistoryPage> {
-  late Future<List<Task>> _tasksFuture;
+  late TaskController _taskController;
 
   @override
   void initState() {
     super.initState();
-    _tasksFuture = _loadTaskHistory();
-  }
-
-  Future<List<Task>> _loadTaskHistory() async {
-    try {
-      return await TaskService.getTaskHistory();
-    } catch (e) {
-      _showErrorSnackBar('Failed to load task history');
-      return [];
-    }
+    _taskController = Get.find<TaskController>();
   }
 
   Future<void> _refreshTaskHistory() async {
-    setState(() {
-      _tasksFuture = _loadTaskHistory();
-    });
+    await _taskController.loadTaskHistory();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Refreshing task history...'),
@@ -243,76 +233,51 @@ class _TaskHistoryPageState extends State<TaskHistoryPage> {
         ],
       ),
       body: SafeArea(
-        child: FutureBuilder<List<Task>>(
-          future: _tasksFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
-            } else if (snapshot.hasError || snapshot.data == null) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      size: 48,
-                      color: Colors.red.shade300,
+        child: Obx(() {
+          if (_taskController.isLoading.value) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          } else if (_taskController.taskHistory.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.history,
+                    size: 48,
+                    color: Colors.grey.shade300,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No completed tasks',
+                    style: TextStyle(
+                      color: Colors.grey.shade700,
+                      fontSize: 16,
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Failed to load task history',
-                      style: TextStyle(
-                        color: Colors.grey.shade700,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            } else if (snapshot.data!.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.history,
-                      size: 48,
-                      color: Colors.grey.shade300,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No completed tasks',
-                      style: TextStyle(
-                        color: Colors.grey.shade700,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            } else {
-              return RefreshIndicator(
-                onRefresh: _refreshTaskHistory,
-                child: ListView.builder(
-                  key: const PageStorageKey('task_history_list'),
-                  padding: const EdgeInsets.all(16.0),
-                  itemCount: snapshot.data!.length,
-                  itemBuilder: (context, index) {
-                    final task = snapshot.data![index];
-                    return Card(
-                      key: ValueKey('task_history_${task.id}_$index'),
-                      child: _buildTaskHistoryCard(task),
-                    );
-                  },
-                ),
-              );
-            }
-          },
-        ),
+                  ),
+                ],
+              ),
+            );
+          } else {
+            return RefreshIndicator(
+              onRefresh: _refreshTaskHistory,
+              child: ListView.builder(
+                key: const PageStorageKey('task_history_list'),
+                padding: const EdgeInsets.all(16.0),
+                itemCount: _taskController.taskHistory.length,
+                itemBuilder: (context, index) {
+                  final task = _taskController.taskHistory[index];
+                  return Card(
+                    key: ValueKey('task_history_${task.id}_$index'),
+                    child: _buildTaskHistoryCard(task),
+                  );
+                },
+              ),
+            );
+          }
+        }),
       ),
     );
   }
 }
-

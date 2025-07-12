@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:woosh/models/client/client_model.dart';
 import 'package:woosh/models/journeyplan/journeyplan_model.dart';
-import 'package:woosh/services/core/journeyplan/journey_plan_service.dart';
-import 'package:woosh/services/core/route_service.dart' as RouteServices;
-import 'package:woosh/services/database_service.dart';
 import 'package:woosh/utils/app_theme.dart';
+import 'package:get/get.dart';
+import 'package:woosh/controllers/journeycontroller/journey_plan_controller.dart';
+import 'package:woosh/controllers/routecontroller/route_controller.dart';
+import 'package:woosh/services/core/route_service.dart';
 
 class JourneyPlanFormWidget extends StatefulWidget {
   final Client selectedClient;
@@ -27,16 +28,18 @@ class _JourneyPlanFormWidgetState extends State<JourneyPlanFormWidget> {
   DateTime selectedDate = DateTime.now();
   final TextEditingController notesController = TextEditingController();
   int? selectedRouteId;
-  List<RouteServices.RouteOption> _routeOptions = [];
+  List<RouteOption> _routeOptions = [];
   bool _isLoadingRoutes = false;
   bool _isCreating = false;
 
-  late final DatabaseService _db;
+  late final JourneyPlanController _journeyPlanController;
+  late final RouteController _routeController;
 
   @override
   void initState() {
     super.initState();
-    _db = DatabaseService.instance;
+    _journeyPlanController = Get.find<JourneyPlanController>();
+    _routeController = Get.find<RouteController>();
     _initializeRoutes();
   }
 
@@ -52,11 +55,11 @@ class _JourneyPlanFormWidgetState extends State<JourneyPlanFormWidget> {
     });
 
     try {
-      final currentUser = await _db.getCurrentUserDetails();
-      final userRouteId = currentUser['routeId'];
+      final currentUser = await _journeyPlanController.getCurrentUserDetails();
+      final userRouteId = currentUser?['routeId'];
 
-      final routeOptions = await RouteServices.RouteService
-          .getCachedRouteOptionsForCurrentUser();
+      final routeOptions =
+          await _routeController.getCachedRouteOptionsForCurrentUser();
 
       print(
           '📍 Fetched ${routeOptions.length} cached route options for current user');
@@ -80,8 +83,9 @@ class _JourneyPlanFormWidgetState extends State<JourneyPlanFormWidget> {
     } catch (e) {
       print('❌ Error loading routes: $e');
       try {
-        final currentUser = await _db.getCurrentUserDetails();
-        final routeId = currentUser['routeId'];
+        final currentUser =
+            await _journeyPlanController.getCurrentUserDetails();
+        final routeId = currentUser?['routeId'];
 
         if (routeId != null && mounted) {
           setState(() {
@@ -130,22 +134,35 @@ class _JourneyPlanFormWidgetState extends State<JourneyPlanFormWidget> {
     });
 
     try {
-      final currentUser = await _db.getCurrentUserDetails();
-      final userId = currentUser['id'];
-      final routeId = selectedRouteId ?? currentUser['routeId'];
+      final currentUser = await _journeyPlanController.getCurrentUserDetails();
+      final userId = currentUser?['id'];
+      final routeId = selectedRouteId ?? currentUser?['routeId'];
 
       print(
           '🚀 Creating journey plan for client ${widget.selectedClient.name}');
 
-      final journeyPlan = await JourneyPlanService.createJourneyPlan(
-        clientId: widget.selectedClient.id,
-        userId: userId,
-        routeId: routeId,
-        date: selectedDate,
-        time: TimeOfDay.now().format(context),
-      );
+      final success = await _journeyPlanController.createJourneyPlan({
+        'clientId': widget.selectedClient.id,
+        'userId': userId,
+        'routeId': routeId,
+        'date': selectedDate,
+        'notes': notesController.text.isNotEmpty ? notesController.text : null,
+      });
 
-      if (journeyPlan != null) {
+      if (success) {
+        // Create a journey plan object from the available data
+        final journeyPlan = JourneyPlan(
+          id: 0, // Will be set by the database
+          date: selectedDate,
+          time:
+              '${selectedDate.hour.toString().padLeft(2, '0')}:${selectedDate.minute.toString().padLeft(2, '0')}:00',
+          salesRepId: userId,
+          status: 0, // Pending status
+          notes: notesController.text.isNotEmpty ? notesController.text : null,
+          client: widget.selectedClient,
+          routeId: routeId,
+        );
+
         widget.onSuccess(journeyPlan);
 
         if (mounted) {
@@ -385,7 +402,8 @@ class _JourneyPlanFormWidgetState extends State<JourneyPlanFormWidget> {
                   items: _routeOptions.map((route) {
                     return DropdownMenuItem(
                       value: route.id,
-                      child: Text(route.name),
+                      child: Text(
+                          route.name.isNotEmpty ? route.name : 'Unnamed Route'),
                     );
                   }).toList(),
                   onChanged: (value) {

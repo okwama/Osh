@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:woosh/models/client/client_model.dart';
 import 'package:woosh/models/Products_Inventory/product_model.dart';
-import 'package:woosh/controllers/uplift_cart_controller.dart';
+import 'package:woosh/controllers/upliftcontroler/uplift_cart_controller.dart';
 import 'package:woosh/services/core/uplift_sale_service.dart';
 import 'package:woosh/services/core/product_service.dart';
 import 'package:woosh/pages/order/product/products_grid_page.dart';

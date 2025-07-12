@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get_storage/get_storage.dart';
-import 'package:woosh/models/hive/session_model.dart';
 import 'package:woosh/pages/Leave/leaveapplication_page.dart';
 import 'package:woosh/pages/Leave/leave_dashboard_page.dart';
 import 'package:woosh/pages/client/viewclient_page.dart';
@@ -10,20 +8,13 @@ import 'package:woosh/pages/login/login_page.dart';
 import 'package:woosh/pages/order/viewOrder/vieworder_page.dart';
 import 'package:woosh/pages/pos/upliftSaleCart_page.dart';
 import 'package:woosh/pages/task/task.dart';
-import 'package:woosh/services/core/task_service.dart';
-import 'package:woosh/services/core/journeyplan/journey_plan_service.dart';
-import 'package:woosh/services/core/session_service.dart';
-import 'package:woosh/models/journeyplan/journeyplan_model.dart';
-import 'package:woosh/services/core/notice_service.dart';
-import 'package:woosh/services/hive/product_hive_service.dart';
-import 'package:woosh/services/hive/cart_hive_service.dart';
-
 import 'package:woosh/pages/profile/profile.dart';
 import 'package:woosh/utils/app_theme.dart';
+import 'package:woosh/utils/error_handler.dart';
 import 'package:woosh/widgets/gradient_app_bar.dart';
 import 'package:woosh/widgets/gradient_widgets.dart';
-import 'package:woosh/models/client/client_model.dart';
-import 'package:woosh/controllers/cart_controller.dart';
+import 'package:woosh/controllers/cartcontroller/cart_controller.dart';
+import 'package:woosh/controllers/homecontroller/home_controller.dart';
 
 import '../../components/menu_tile.dart';
 import '../order/addorder_page.dart';
@@ -40,622 +31,340 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  late String salesRepName;
-  late String salesRepPhone;
-  int _pendingJourneyPlans = 0;
-  int _pendingTasks = 0;
-  int _unreadNotices = 0;
-  bool _isLoading = true;
-  bool _isSessionActive = false;
+  final HomeController homeController = Get.put(HomeController());
   final CartController _cartController = Get.put(CartController());
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUserData();
-    _loadAllDataInParallel();
-  }
-
-  void _loadUserData() {
-    final box = GetStorage();
-    final salesRep = box.read('salesRep');
-
-    setState(() {
-      if (salesRep != null && salesRep is Map<String, dynamic>) {
-        salesRepName = salesRep['name'] ?? 'User';
-        salesRepPhone = salesRep['phoneNumber'] ?? 'No phone number';
-      } else {
-        salesRepName = 'User';
-        salesRepPhone = 'No phone number';
-      }
-    });
-  }
-
-  Future<void> _loadPendingJourneyPlans() async {
-    try {
-      final journeyPlans = await JourneyPlanService.getJourneyPlans();
-
-      // Get today's date in local time
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-
-      if (mounted) {
-        setState(() {
-          _pendingJourneyPlans = journeyPlans.where((plan) {
-            // Convert plan date from UTC to local time
-            final localDate = plan.date.toLocal();
-            // Check if plan is pending (status = 0) AND is for today
-            return plan.status == JourneyPlan.statusPending &&
-                localDate.year == today.year &&
-                localDate.month == today.month &&
-                localDate.day == today.day;
-          }).length;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _pendingJourneyPlans = 0;
-        });
-      }
-    }
-  }
-
-  Future<void> _loadPendingTasks() async {
-    try {
-      final tasks = await TaskService.getTasks();
-      if (mounted) {
-        setState(() {
-          _pendingTasks = tasks.length;
-        });
-      }
-    } catch (e) {}
-  }
-
-  Future<void> _loadUnreadNotices() async {
-    try {
-      // Get count of recent notices (last 30 days)
-      final recentNotices = await NoticeService.getRecentNoticesCount(30);
-
-      if (mounted) {
-        setState(() {
-          _unreadNotices = recentNotices;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _unreadNotices = 0;
-        });
-      }
-    }
-  }
-
-  Future<void> _loadAllDataInParallel() async {
-    try {
-      // Load all data in parallel for better performance
-      final results = await Future.wait([
-        _loadPendingJourneyPlans(),
-        _loadPendingTasks(),
-        _loadUnreadNotices(),
-        _checkSessionStatus(),
-      ]);
-
-      // Single setState call to update all data at once
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _checkSessionStatus() async {
-    try {
-      final box = GetStorage();
-      final userId = box.read<String>('userId');
-
-      if (userId != null) {
-        final currentSession =
-            await SessionService.getCurrentSession(int.parse(userId));
-        if (mounted) {
-          setState(() {
-            _isSessionActive = currentSession?.isActive ?? false;
-          });
-        }
-      }
-    } catch (e) {
-      // Don't change session state on database errors - keep current state
-      // This prevents false "session expired" messages
-    }
-  }
-
-  /// Clear cache in background to avoid blocking UI
-  void _clearCacheInBackground() {
-    Future.microtask(() async {
-      try {
-        final box = GetStorage();
-        final keys = box.getKeys();
-        final keysToRemove = keys
-            .where((key) =>
-                key.startsWith('cache_') ||
-                key.startsWith('outlets_') ||
-                key.startsWith('products_') ||
-                key.startsWith('routes_') ||
-                key.startsWith('notices_') ||
-                key.startsWith('clients_') ||
-                key.startsWith('orders_'))
-            .toList();
-
-        for (final key in keysToRemove) {
-          box.remove(key);
-        }
-      } catch (e) {}
-    });
-  }
-
-  Future<void> _refreshData() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      // Clear cart data
-      await _cartController.clear();
-
-      // Clear GetStorage cache in background
-      _clearCacheInBackground();
-
-      // Clear Hive caches if services are available
-      try {
-        final productHiveService = Get.find<ProductHiveService>();
-        await productHiveService.clearAllProducts();
-      } catch (e) {}
-
-      try {
-        final cartHiveService = Get.find<CartHiveService>();
-        await cartHiveService.clearCart();
-      } catch (e) {}
-
-      // Clear session cache
-      SessionService.clearCache();
-
-      // Reload all data
-      await Future.wait([
-        _loadPendingJourneyPlans(),
-        _loadPendingTasks(),
-        _loadUnreadNotices(),
-        _checkSessionStatus(),
-      ]);
-      _loadUserData();
-
-      // Show success message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('? Dashboard refreshed and all caches cleared'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      // Silent error handling - show success regardless of minor errors
-      print('🔇 Silent error [home-refresh]: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('🔄 Dashboard refreshed'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  void _showSessionInactiveDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.play_circle, color: Colors.blue),
-            SizedBox(width: 8),
-            Text('Start Work Session'),
-          ],
-        ),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'You need to start a work session to access Journey Plans.',
-              style: TextStyle(fontSize: 16),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Work sessions are manual and never expire automatically.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Get.back();
-              // Navigate to profile page
-              Get.to(
-                () => ProfilePage(),
-                preventDuplicates: true,
-                transition: Transition.rightToLeft,
-              )?.then((_) => _checkSessionStatus());
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Start Session'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _logout() async {
-    try {
-      // Show confirmation dialog
-      final shouldLogout = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: GradientText('Logout',
-              style: const TextStyle(fontWeight: FontWeight.bold)),
-          content: const Text('Are you sure you want to logout?'),
-          actions: [
-            TextButton(
-              onPressed: () => Get.back(result: false),
-              child: const Text('Cancel'),
-            ),
-            GoldGradientButton(
-              onPressed: () => Get.back(result: true),
-              child: const Text('Logout'),
-            ),
-          ],
-        ),
-      );
-
-      if (shouldLogout != true) return;
-
-      // Show loading indicator
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: GradientCircularProgressIndicator(),
-        ),
-      );
-
-      // Clear cart data
-      await _cartController.clear();
-
-      // Clear authentication data from GetStorage
-      final box = GetStorage();
-      await box.remove('userId');
-      await box.remove('salesRep');
-      await box.remove('authToken');
-      await box.remove('refreshToken');
-      await box.remove('accessToken');
-      await box.remove('userCredentials');
-      await box.remove('userSession');
-      await box.remove('loginTime');
-      await box.remove('sessionId');
-
-      // Update auth controller state
-      final authController = Get.find<AuthController>();
-      await authController.logout();
-
-      // Close loading indicator
-      if (!mounted) return;
-      Get.back();
-
-      // Navigate to login page and clear all previous routes
-      Get.offAllNamed('/login');
-
-      // Show success message
-      Get.snackbar(
-        'Logged Out',
-        'You have been successfully logged out',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 2),
-      );
-    } catch (e) {
-      if (!mounted) return;
-
-      // Close loading indicator if it's showing
-      if (Navigator.canPop(context)) {
-        Get.back();
-      }
-
-      // Force local logout for any errors
-      final box = GetStorage();
-      await box.remove('userId');
-      await box.remove('salesRep');
-      await box.remove('authToken');
-      await box.remove('refreshToken');
-      await box.remove('accessToken');
-
-      Get.offAllNamed('/login');
-      Get.snackbar(
-        'Logged Out',
-        'Logged out locally',
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: appBackground,
       appBar: GradientAppBar(
-        title: 'WOOSH',
+        title: 'Dashboard',
         actions: [
-          Obx(() {
-            final cartItems = _cartController.totalItems;
-            return Stack(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.shopping_cart),
-                  tooltip: 'Cart',
-                  onPressed: () {
-                    Get.to(
-                      () => const ViewOrdersPage(),
-                      preventDuplicates: true,
-                      transition: Transition.rightToLeft,
-                    );
-                  },
-                ),
-                if (cartItems > 0)
-                  Positioned(
-                    right: 8,
-                    top: 8,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      constraints: const BoxConstraints(
-                        minWidth: 16,
-                        minHeight: 16,
-                      ),
-                      child: Text(
-                        '$cartItems',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-              ],
-            );
-          }),
           IconButton(
-            icon: _isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : const Icon(Icons.refresh),
-            tooltip: 'Refresh & Clear Cache',
-            onPressed: _isLoading
-                ? null
-                : () {
-                    // Show immediate feedback
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                            '?? Refreshing dashboard and clearing cache...'),
-                        duration: Duration(seconds: 1),
-                        backgroundColor: Colors.blue,
-                      ),
-                    );
-
-                    // Start the refresh process
-                    _refreshData();
-                  },
+            icon: const Icon(Icons.refresh),
+            onPressed: () => homeController.refreshData(),
+            tooltip: 'Refresh Dashboard',
           ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) {
-              if (value == 'logout') {
-                _logout();
-              }
-            },
-            itemBuilder: (BuildContext context) => [
-              const PopupMenuItem<String>(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout),
-                    SizedBox(width: 8),
-                    Text('Logout'),
-                  ],
-                ),
-              ),
-            ],
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () => Get.to(() => const ProfilePage()),
+            tooltip: 'Profile',
           ),
         ],
       ),
-      body: SafeArea(
+      body: Obx(() {
+        if (homeController.isDataLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        return RefreshIndicator(
+          onRefresh: () => homeController.refreshData(),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildUserProfileSection(),
+                const SizedBox(height: 24),
+                _buildQuickStatsSection(),
+                const SizedBox(height: 24),
+                _buildMenuGrid(),
+                const SizedBox(height: 24),
+                _buildSessionStatusCard(),
+              ],
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildUserProfileSection() {
+    final userData = homeController.getUserData();
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            colors: [Colors.blue.shade50, Colors.blue.shade100],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade100,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.person,
+                color: Colors.blue.shade700,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+                    userData['name'] ?? 'User',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+            Text(
+                    userData['phone'] ?? 'No phone number',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickStatsSection() {
+    final stats = homeController.getDashboardStats();
+
+    return Row(
+      children: [
+        Expanded(
+          child: _buildStatCard(
+            'Pending Journey Plans',
+            stats['pendingJourneyPlans']?.toString() ?? '0',
+            Icons.route,
+            Colors.orange,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildStatCard(
+            'Pending Tasks',
+            stats['pendingTasks']?.toString() ?? '0',
+            Icons.task,
+            Colors.blue,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildStatCard(
+            'Unread Notices',
+            stats['unreadNotices']?.toString() ?? '0',
+            Icons.notifications,
+            Colors.red,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatCard(
+      String title, String value, IconData icon, Color color) {
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
         child: Column(
           children: [
-            // Menu section title
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 1.0,
-                  mainAxisSpacing: 1.0,
+            Icon(icon, color: color, size: 24),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuGrid() {
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+      childAspectRatio: 1.2,
+              children: [
+        _buildMenuTile(
+          'Journey Plans',
+          Icons.route,
+          Colors.blue,
+          () => Get.to(() => const JourneyPlansPage()),
+          enabled: homeController.hasActiveSession,
+        ),
+        _buildMenuTile(
+          'Clients',
+          Icons.people,
+          Colors.green,
+          () => Get.to(() => const ViewClientPage()),
+        ),
+        _buildMenuTile(
+          'Tasks',
+          Icons.task,
+          Colors.purple,
+          () => Get.to(() => const TaskPage()),
+        ),
+        _buildMenuTile(
+          'Notices',
+          Icons.notifications,
+          Colors.red,
+          () => Get.to(() => const NoticeBoardPage()),
+        ),
+        _buildMenuTile(
+          'Leave',
+          Icons.event_note,
+          Colors.teal,
+          () => Get.to(() => const LeaveDashboardPage()),
+        ),
+        _buildMenuTile(
+          'Targets',
+          Icons.track_changes,
+          Colors.indigo,
+          () => Get.to(() => const TargetsPage()),
+                  ),
+              ],
+            );
+  }
+
+  Widget _buildMenuTile(
+    String title,
+    IconData icon,
+    Color color,
+    VoidCallback onTap, {
+    bool enabled = true,
+  }) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              colors: enabled
+                  ? [color.withOpacity(0.1), color.withOpacity(0.2)]
+                  : [
+                      Colors.grey.withOpacity(0.1),
+                      Colors.grey.withOpacity(0.2)
+                    ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // User Profile Tile with Session Status
-                    MenuTile(
-                      title: 'Merchandiser',
-                      subtitle:
-                          '$salesRepName\n$salesRepPhone\n${_isSessionActive ? '🟢 Session Active' : '🔴 Session Inactive'}',
-                      icon: Icons.person,
-                      onTap: () {
-                        Get.to(
-                          () => ProfilePage(),
-                          preventDuplicates: true,
-                          transition: Transition.rightToLeft,
-                        )?.then((_) => _checkSessionStatus());
-                      },
-                    ),
-                    // Journey Plans with session restriction
-                    MenuTile(
-                      title: 'Journey Plans',
-                      icon: Icons.map,
-                      badgeCount: _isLoading ? null : _pendingJourneyPlans,
-                      onTap: _isSessionActive
-                          ? () => Get.to(() => const JourneyPlansPage())
-                          : () => _showSessionInactiveDialog(),
-                    ),
-                    MenuTile(
-                      title: 'View Client',
-                      icon: Icons.storefront_outlined,
-                      onTap: () {
-                        Get.to(
-                          () => const ViewClientPage(),
-                          preventDuplicates: true,
-                          transition: Transition.rightToLeft,
-                        );
-                      },
-                    ),
-                    // Notice Board (always active)
-                    MenuTile(
-                      title: 'Notice Board',
-                      icon: Icons.notifications,
-                      badgeCount: _unreadNotices > 0 ? _unreadNotices : null,
-                      onTap: () {
-                        Get.to(
-                          () => const NoticeBoardPage(),
-                          preventDuplicates: true,
-                          transition: Transition.rightToLeft,
-                        )?.then((_) => _loadUnreadNotices());
-                      },
-                    ),
-                    MenuTile(
-                      title: 'Add/Edit Order',
-                      icon: Icons.edit,
-                      onTap: () {
-                        Get.to(
-                          () => const ViewClientPage(forOrderCreation: true),
-                          preventDuplicates: true,
-                          transition: Transition.rightToLeft,
-                        );
-                      },
-                    ),
-                    MenuTile(
-                      title: 'View Orders',
-                      icon: Icons.shopping_cart,
-                      onTap: () {
-                        Get.to(
-                          () => const ViewOrdersPage(),
-                          preventDuplicates: true,
-                          transition: Transition.rightToLeft,
-                        );
-                      },
-                    ),
-                    // Tasks (always active)
-                    MenuTile(
-                      title: 'Tasks/Warnings',
-                      icon: Icons.task,
-                      badgeCount: _pendingTasks,
-                      onTap: () {
-                        Get.to(
-                          () => const TaskPage(),
-                          preventDuplicates: true,
-                          transition: Transition.rightToLeft,
-                        )?.then((_) => _loadPendingTasks());
-                      },
-                    ),
-                    // Leave (always active)
-                    MenuTile(
-                      title: 'Leave',
-                      icon: Icons.event_busy,
-                      onTap: () {
-                        Get.to(
-                          () => const LeaveDashboardPage(),
-                          preventDuplicates: true,
-                          transition: Transition.rightToLeft,
-                        );
-                      },
-                    ),
-                    MenuTile(
-                      title: 'Uplift Sale',
-                      icon: Icons.shopping_cart,
-                      onTap: () {
-                        Get.to(
-                          () => const ViewClientPage(forUpliftSale: true),
-                          preventDuplicates: true,
-                          transition: Transition.rightToLeft,
-                        )?.then((selectedClient) {
-                          if (selectedClient != null &&
-                              selectedClient is Client) {
-                            Get.off(
-                              () => UpliftSaleCartPage(
-                                outlet: selectedClient,
-                              ),
-                              transition: Transition.rightToLeft,
-                            );
-                          }
-                        });
-                      },
-                    ),
-                    MenuTile(
-                      title: 'Uplift Sales History',
-                      icon: Icons.history,
-                      onTap: () {
-                        Get.toNamed('/uplift-sales');
-                      },
-                    ),
-                    MenuTile(
-                      title: 'Product Return',
-                      icon: Icons.assignment_return,
-                      onTap: () {
-                        Get.to(
-                          () => const ViewClientPage(forProductReturn: true),
-                          preventDuplicates: true,
-                          transition: Transition.rightToLeft,
-                        );
-                      },
-                    ),
-                  ],
+              Icon(
+                icon,
+                color: enabled ? color : Colors.grey,
+                size: 32,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: enabled ? color : Colors.grey,
                 ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSessionStatusCard() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            colors: homeController.hasActiveSession
+                ? [Colors.green.shade50, Colors.green.shade100]
+                : [Colors.red.shade50, Colors.red.shade100],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Icon(
+              homeController.hasActiveSession
+                  ? Icons.play_circle
+                  : Icons.stop_circle,
+              color:
+                  homeController.hasActiveSession ? Colors.green : Colors.red,
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                  Text(
+                    homeController.hasActiveSession
+                        ? 'Session Active'
+                        : 'Session Inactive',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: homeController.hasActiveSession
+                          ? Colors.green.shade700
+                          : Colors.red.shade700,
+                    ),
+                  ),
+                  Text(
+                    homeController.hasActiveSession
+                        ? 'You can access all features'
+                        : 'Start your session to access journey plans',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: homeController.hasActiveSession
+                          ? Colors.green.shade600
+                          : Colors.red.shade600,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

@@ -213,7 +213,7 @@ function Fix-OrderDetailPage {
 function Fix-JourneyView {
     Write-Host "Fixing journey view issues..." -ForegroundColor Yellow
     
-    $file = "lib/pages/journeyplan/journeyview.dart"
+    $file = "lib/pages/journeyplan/journeyview_modular.dart"
     if (Test-Path $file) {
         $content = Get-Content -Path $file -Raw
         

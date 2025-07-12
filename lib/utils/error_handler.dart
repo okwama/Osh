@@ -1,249 +1,301 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:woosh/services/token_service.dart';
-import 'package:woosh/controllers/auth/auth_controller.dart';
+import 'package:woosh/utils/error_logger.dart';
 
-class GlobalErrorHandler {
-  // Flag to prevent multiple error dialogs
-  static bool _isShowingError = false;
+/// Centralized error handling system for the app
+class ErrorHandler {
+  static final ErrorHandler _instance = ErrorHandler._internal();
+  factory ErrorHandler() => _instance;
+  ErrorHandler._internal();
 
-  /// Main error handler - filters all errors and shows user-friendly messages
-  static void handleApiError(dynamic error, {bool showToast = true}) {
+  /// Handle database connection errors
+  static void handleDatabaseError(dynamic error, {String? context}) {
+    ErrorLogger.logError('Database Error', error, context: context);
 
-    // Never show raw errors to users
-    final userFriendlyMessage = getUserFriendlyMessage(error);
-    final errorType = _getErrorType(error);
+    String userMessage =
+        'Unable to connect to database. Please check your internet connection and try again.';
 
-    switch (errorType) {
-      case ErrorType.authentication:
-        _handleAuthError(error);
-        break;
-      case ErrorType.network:
-        if (showToast) {
-          Get.snackbar(
-            'Connection Error',
-            userFriendlyMessage,
-            backgroundColor: Colors.orange,
-            colorText: Colors.white,
-            duration: const Duration(seconds: 4),
-          );
-        }
-        break;
-      case ErrorType.server:
-      case ErrorType.client:
-      case ErrorType.validation:
-      case ErrorType.unknown:
-        if (showToast) {
-          _showUserFriendlyError(userFriendlyMessage);
-        }
-        break;
-    }
-  }
-
-  /// Get user-friendly message based on error
-  static String getUserFriendlyMessage(dynamic error) {
-    final errorString = error.toString().toLowerCase();
-
-    // Timeout errors (check before network errors)
-    if (_isTimeoutError(errorString)) {
-      return "The request is taking too long. Please try again.";
+    if (error.toString().contains('timeout')) {
+      userMessage = 'Request timed out. Please try again.';
+    } else if (error.toString().contains('connection')) {
+      userMessage =
+          'Network connection issue. Please check your internet connection.';
+    } else if (error.toString().contains('permission')) {
+      userMessage = 'Access denied. Please contact your administrator.';
     }
 
-    // Validation errors (check before client errors)
-    if (_isValidationError(errorString)) {
-      return "Please check your input and try again.";
-    }
-
-    // Network errors
-    if (_isNetworkError(errorString)) {
-      return "Please check your internet connection and try again.";
-    }
-
-    // Server errors (5xx)
-    if (_isServerError(errorString)) {
-      return "Our servers are temporarily unavailable. Please try again later.";
-    }
-
-    // Client errors (4xx)
-    if (_isClientError(errorString)) {
-      if (errorString.contains('401') || errorString.contains('unauthorized')) {
-        return "Your session has expired. Please log in again.";
-      }
-      if (errorString.contains('403') || errorString.contains('forbidden')) {
-        return "You don't have permission to perform this action.";
-      }
-      if (errorString.contains('404') || errorString.contains('not found')) {
-        return "The requested information could not be found.";
-      }
-      if (errorString.contains('429') || errorString.contains('rate limit')) {
-        return "Too many requests. Please wait a moment and try again.";
-      }
-      return "There was an issue with your request. Please try again.";
-    }
-
-    // Default fallback
-    return "Something went wrong. Please try again.";
-  }
-
-  /// Determine error type for handling
-  static ErrorType _getErrorType(dynamic error) {
-    final errorString = error.toString().toLowerCase();
-
-    if (_isAuthError(errorString)) {
-      return ErrorType.authentication;
-    }
-    if (_isTimeoutError(errorString)) {
-      return ErrorType.network; // Treat timeouts as network errors
-    }
-    if (_isValidationError(errorString)) {
-      return ErrorType.validation;
-    }
-    if (_isNetworkError(errorString)) {
-      return ErrorType.network;
-    }
-    if (_isServerError(errorString)) {
-      return ErrorType.server;
-    }
-    if (_isClientError(errorString)) {
-      return ErrorType.client;
-    }
-
-    return ErrorType.unknown;
-  }
-
-  /// Check if error is network-related
-  static bool _isNetworkError(String errorString) {
-    return errorString.contains('socketexception') ||
-        errorString.contains('connection timeout') ||
-        errorString.contains('network error') ||
-        errorString.contains('connection refused') ||
-        errorString.contains('no internet') ||
-        errorString.contains('xmlhttprequest error') ||
-        errorString.contains('failed to connect') ||
-        errorString.contains('failed to fetch') ||
-        errorString.contains('clientexception') ||
-        errorString.contains('connection failed');
-  }
-
-  /// Check if error is server-related (5xx)
-  static bool _isServerError(String errorString) {
-    return errorString.contains('500') ||
-        errorString.contains('501') ||
-        errorString.contains('502') ||
-        errorString.contains('503') ||
-        errorString.contains('504') ||
-        errorString.contains('505') ||
-        errorString.contains('internal server error') ||
-        errorString.contains('bad gateway') ||
-        errorString.contains('service unavailable') ||
-        errorString.contains('gateway timeout');
-  }
-
-  /// Check if error is client-related (4xx)
-  static bool _isClientError(String errorString) {
-    return errorString.contains('400') ||
-        errorString.contains('401') ||
-        errorString.contains('403') ||
-        errorString.contains('404') ||
-        errorString.contains('405') ||
-        errorString.contains('409') ||
-        errorString.contains('422') ||
-        errorString.contains('429') ||
-        errorString.contains('bad request') ||
-        errorString.contains('unauthorized') ||
-        errorString.contains('forbidden') ||
-        errorString.contains('not found') ||
-        errorString.contains('conflict') ||
-        errorString.contains('unprocessable') ||
-        errorString.contains('rate limit');
-  }
-
-  /// Check if error is authentication-related
-  static bool _isAuthError(String errorString) {
-    return errorString.contains('authentication required') ||
-        errorString.contains('session expired') ||
-        errorString.contains('token refreshed, retry request') ||
-        errorString.contains('unauthorized') ||
-        errorString.contains('401');
-  }
-
-  /// Check if error is timeout-related
-  static bool _isTimeoutError(String errorString) {
-    return (errorString.contains('timeout') &&
-            !errorString.contains('connection timeout') &&
-            !errorString.contains('gateway timeout')) ||
-        errorString.contains('timeoutexception') ||
-        errorString.contains('operation timed out');
-  }
-
-  /// Check if error is validation-related
-  static bool _isValidationError(String errorString) {
-    return errorString.contains('validation') ||
-        errorString.contains('invalid') ||
-        errorString.contains('required') ||
-        errorString.contains('422');
+    _showErrorSnackbar(userMessage);
   }
 
   /// Handle authentication errors
-  static void _handleAuthError(dynamic error) {
-    if (error.toString().contains('Token refreshed, retry request')) {
-      // Token was refreshed, this is not an error - just retry the request
-      return;
+  static void handleAuthError(dynamic error, {String? context}) {
+    ErrorLogger.logError('Authentication Error', error, context: context);
+
+    String userMessage = 'Authentication failed. Please try logging in again.';
+
+    if (error.toString().contains('invalid_credentials')) {
+      userMessage = 'Invalid username or password. Please try again.';
+    } else if (error.toString().contains('session_expired')) {
+      userMessage = 'Your session has expired. Please log in again.';
+    } else if (error.toString().contains('account_locked')) {
+      userMessage = 'Account is locked. Please contact your administrator.';
+    } else if (error.toString().contains('insufficient_permissions')) {
+      userMessage = 'You don\'t have permission to perform this action.';
     }
 
-    // Clear tokens and redirect to login
-    TokenService.clearTokens();
-
-    // Show user-friendly message
-    _showUserFriendlyError(
-      'Your session has expired. Please log in again.',
-      backgroundColor: Colors.orange,
-      duration: const Duration(seconds: 3),
-    );
-
-    // Redirect to login
-    Get.offAllNamed('/login');
+    _showErrorSnackbar(userMessage);
   }
 
-  /// Show user-friendly error message
-  static void _showUserFriendlyError(
-    String message, {
-    Color backgroundColor = Colors.red,
-    Duration duration = const Duration(seconds: 4),
-  }) {
-    if (_isShowingError) return;
+  /// Handle network errors
+  static void handleNetworkError(dynamic error, {String? context}) {
+    ErrorLogger.logError('Network Error', error, context: context);
 
-    _isShowingError = true;
+    String userMessage =
+        'Network error occurred. Please check your connection and try again.';
+
+    if (error.toString().contains('timeout')) {
+      userMessage = 'Request timed out. Please try again.';
+    } else if (error.toString().contains('no_internet')) {
+      userMessage =
+          'No internet connection. Please check your network settings.';
+    } else if (error.toString().contains('server_error')) {
+      userMessage =
+          'Server is temporarily unavailable. Please try again later.';
+    }
+
+    _showErrorSnackbar(userMessage);
+  }
+
+  /// Handle validation errors
+  static void handleValidationError(dynamic error, {String? context}) {
+    ErrorLogger.logError('Validation Error', error, context: context);
+
+    String userMessage = 'Please check your input and try again.';
+
+    if (error.toString().contains('required')) {
+      userMessage = 'Please fill in all required fields.';
+    } else if (error.toString().contains('invalid_format')) {
+      userMessage = 'Invalid format. Please check your input.';
+    } else if (error.toString().contains('too_short')) {
+      userMessage = 'Input is too short. Please provide more information.';
+    } else if (error.toString().contains('too_long')) {
+      userMessage = 'Input is too long. Please shorten your input.';
+    }
+
+    _showErrorSnackbar(userMessage);
+  }
+
+  /// Handle file operation errors
+  static void handleFileError(dynamic error, {String? context}) {
+    ErrorLogger.logError('File Error', error, context: context);
+
+    String userMessage = 'File operation failed. Please try again.';
+
+    if (error.toString().contains('permission')) {
+      userMessage = 'Permission denied. Please check file permissions.';
+    } else if (error.toString().contains('not_found')) {
+      userMessage = 'File not found. Please check the file path.';
+    } else if (error.toString().contains('corrupted')) {
+      userMessage =
+          'File appears to be corrupted. Please try a different file.';
+    } else if (error.toString().contains('too_large')) {
+      userMessage = 'File is too large. Please choose a smaller file.';
+    }
+
+    _showErrorSnackbar(userMessage);
+  }
+
+  /// Handle image processing errors
+  static void handleImageError(dynamic error, {String? context}) {
+    ErrorLogger.logError('Image Error', error, context: context);
+
+    String userMessage = 'Image processing failed. Please try again.';
+
+    if (error.toString().contains('unsupported_format')) {
+      userMessage = 'Unsupported image format. Please use JPG, PNG, or GIF.';
+    } else if (error.toString().contains('corrupted')) {
+      userMessage =
+          'Image file appears to be corrupted. Please try a different image.';
+    } else if (error.toString().contains('too_large')) {
+      userMessage = 'Image is too large. Please choose a smaller image.';
+    }
+
+    _showErrorSnackbar(userMessage);
+  }
+
+  /// Handle session errors
+  static void handleSessionError(dynamic error, {String? context}) {
+    ErrorLogger.logError('Session Error', error, context: context);
+
+    String userMessage = 'Session error occurred. Please try again.';
+
+    if (error.toString().contains('expired')) {
+      userMessage = 'Session has expired. Please log in again.';
+    } else if (error.toString().contains('invalid')) {
+      userMessage = 'Invalid session. Please log in again.';
+    } else if (error.toString().contains('conflict')) {
+      userMessage = 'Another session is active. Please end it first.';
+    }
+
+    _showErrorSnackbar(userMessage);
+  }
+
+  /// Handle general errors with custom message
+  static void handleGeneralError(dynamic error,
+      {String? context, String? customMessage}) {
+    ErrorLogger.logError('General Error', error, context: context);
+
+    String userMessage =
+        customMessage ?? 'An unexpected error occurred. Please try again.';
+    _showErrorSnackbar(userMessage);
+  }
+
+  /// Handle silent errors (log only, no user notification)
+  static void handleSilentError(dynamic error, {String? context}) {
+    ErrorLogger.logError('Silent Error', error, context: context);
+    // No user notification for silent errors
+  }
+
+  /// Show error dialog with retry option
+  static Future<bool> showErrorDialog({
+    required String title,
+    required String message,
+    String? retryText,
+    String? cancelText,
+  }) async {
+    final result = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text(cancelText ?? 'Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Get.back(result: true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(retryText ?? 'Retry'),
+          ),
+        ],
+      ),
+    );
+
+    return result ?? false;
+  }
+
+  /// Show error snackbar
+  static void _showErrorSnackbar(String message) {
+    if (Get.isSnackbarOpen) {
+      Get.closeCurrentSnackbar();
+    }
+
     Get.snackbar(
       'Error',
       message,
-      backgroundColor: backgroundColor,
+      backgroundColor: Colors.red,
       colorText: Colors.white,
-      duration: duration,
-      onTap: (_) => _isShowingError = false,
+      duration: const Duration(seconds: 4),
+      snackPosition: SnackPosition.TOP,
+      margin: const EdgeInsets.all(8),
+      borderRadius: 8,
+      icon: const Icon(Icons.error_outline, color: Colors.white),
     );
-
-    // Reset flag after duration
-    Future.delayed(duration, () {
-      _isShowingError = false;
-    });
   }
 
-  /// Log errors safely (for debugging only)
-  static void logError(dynamic error, {String? context}) {
-    final contextStr = context != null ? ' [$context]' : '';
+  /// Show success snackbar
+  static void showSuccessSnackbar(String message) {
+    if (Get.isSnackbarOpen) {
+      Get.closeCurrentSnackbar();
+    }
 
-    // In production, you might want to send this to a logging service
-    // but never expose raw errors to users
+    Get.snackbar(
+      'Success',
+      message,
+      backgroundColor: Colors.green,
+      colorText: Colors.white,
+      duration: const Duration(seconds: 3),
+      snackPosition: SnackPosition.TOP,
+      margin: const EdgeInsets.all(8),
+      borderRadius: 8,
+      icon: const Icon(Icons.check_circle, color: Colors.white),
+    );
   }
-}
 
-/// Error types for categorization
-enum ErrorType {
-  authentication,
-  network,
-  server,
-  client,
-  validation,
-  unknown,
+  /// Show warning snackbar
+  static void showWarningSnackbar(String message) {
+    if (Get.isSnackbarOpen) {
+      Get.closeCurrentSnackbar();
+    }
+
+    Get.snackbar(
+      'Warning',
+      message,
+      backgroundColor: Colors.orange,
+      colorText: Colors.white,
+      duration: const Duration(seconds: 4),
+      snackPosition: SnackPosition.TOP,
+      margin: const EdgeInsets.all(8),
+      borderRadius: 8,
+      icon: const Icon(Icons.warning_amber, color: Colors.white),
+    );
+  }
+
+  /// Show info snackbar
+  static void showInfoSnackbar(String message) {
+    if (Get.isSnackbarOpen) {
+      Get.closeCurrentSnackbar();
+    }
+
+    Get.snackbar(
+      'Info',
+      message,
+      backgroundColor: Colors.blue,
+      colorText: Colors.white,
+      duration: const Duration(seconds: 3),
+      snackPosition: SnackPosition.TOP,
+      margin: const EdgeInsets.all(8),
+      borderRadius: 8,
+      icon: const Icon(Icons.info_outline, color: Colors.white),
+    );
+  }
+
+  /// Handle async operations with error handling
+  static Future<T?> handleAsyncOperation<T>({
+    required Future<T> Function() operation,
+    String? errorContext,
+    String? customErrorMessage,
+    bool showError = true,
+  }) async {
+    try {
+      return await operation();
+    } catch (error) {
+      if (showError) {
+        handleGeneralError(error,
+            context: errorContext, customMessage: customErrorMessage);
+      } else {
+        handleSilentError(error, context: errorContext);
+      }
+      return null;
+    }
+  }
+
+  /// Handle async operations with specific error types
+  static Future<T?> handleAsyncOperationWithType<T>({
+    required Future<T> Function() operation,
+    required void Function(dynamic error) errorHandler,
+    String? errorContext,
+  }) async {
+    try {
+      return await operation();
+    } catch (error) {
+      errorHandler(error);
+      ErrorLogger.logError('Async Operation Error', error,
+          context: errorContext);
+      return null;
+    }
+  }
 }

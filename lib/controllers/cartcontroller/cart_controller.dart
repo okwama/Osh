@@ -2,7 +2,11 @@ import 'package:get/get.dart';
 import 'package:woosh/models/order/orderitem_model.dart';
 import 'package:woosh/models/Products_Inventory/product_model.dart';
 import 'package:woosh/models/Products_Inventory/price_option_model.dart';
+import 'package:woosh/models/Products_Inventory/store_model.dart';
+import 'package:woosh/models/client/client_model.dart';
 import 'package:woosh/services/hive/cart_hive_service.dart';
+import 'package:woosh/services/core/store_service.dart';
+import 'package:get_storage/get_storage.dart';
 
 class CartController extends GetxController {
   final RxList<OrderItem> items = <OrderItem>[].obs;
@@ -20,9 +24,9 @@ class CartController extends GetxController {
       isLoading.value = true;
       await _cartHiveService.init();
       items.value = _cartHiveService.getCartItems();
-            } catch (e) {
-          print('Error loading cart items: $e');
-        } finally {
+    } catch (e) {
+      print('Error loading cart items: $e');
+    } finally {
       isLoading.value = false;
     }
   }
@@ -153,6 +157,28 @@ class CartController extends GetxController {
     } else {
       // No price option selected, use unit cost
       return item.product?.unitCost ?? 0.0;
+    }
+  }
+
+  Future<List<Store>> loadStores(Client outlet) async {
+    try {
+      final box = GetStorage();
+      final salesRep = box.read('salesRep');
+      final userRegionId = salesRep?['region_id'];
+      final userCountryId = salesRep?['countryId'];
+      final countryId = userCountryId ?? outlet.countryId;
+      if (countryId == null) {
+        throw Exception(
+            'Unable to determine your country. Please contact support.');
+      }
+      var stores = await StoreService.getStoresForUser(countryId, userRegionId);
+      if (stores.isEmpty && userRegionId != null) {
+        stores = await StoreService.getStoresForUser(countryId, null);
+      }
+      return stores;
+    } catch (e) {
+      print('❌ Error in CartController.loadStores: $e');
+      rethrow;
     }
   }
 }

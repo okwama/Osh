@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:woosh/services/core/leave_service.dart';
+import 'package:woosh/controllers/leavecontroller/leave_controller.dart';
+import 'package:woosh/controllers/uploadcontroller/upload_controller.dart';
+import 'package:woosh/controllers/leavecontroller/leave_balance_controller.dart';
 import 'package:woosh/models/leaves/leave_model.dart';
 import 'package:woosh/pages/Leave/leave_requests_page.dart';
 import 'package:woosh/pages/Leave/leave_dashboard_page.dart';
-import 'package:woosh/services/core/upload_service.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:get_storage/get_storage.dart';
-import 'package:woosh/services/core/leave_balance_service.dart';
 
 class LeaveApplicationPage extends StatefulWidget {
   const LeaveApplicationPage({super.key});
@@ -35,9 +35,16 @@ class _LeaveApplicationPageState extends State<LeaveApplicationPage> {
   bool _isHalfDay = false;
   Map<int, LeaveBalance> _leaveBalances = {};
 
+  late LeaveController _leaveController;
+  late UploadController _uploadController;
+  late LeaveBalanceController _leaveBalanceController;
+
   @override
   void initState() {
     super.initState();
+    _leaveController = Get.put(LeaveController());
+    _uploadController = Get.put(UploadController());
+    _leaveBalanceController = Get.put(LeaveBalanceController());
     _loadLeaveTypes();
     _loadLeaveBalances();
   }
@@ -57,7 +64,7 @@ class _LeaveApplicationPageState extends State<LeaveApplicationPage> {
         _error = null;
       });
 
-      final leaveTypes = await LeaveService.getLeaveTypes();
+      final leaveTypes = await _leaveController.getLeaveTypes();
       setState(() {
         _leaveTypes = leaveTypes;
         _isLoadingTypes = false;
@@ -91,15 +98,18 @@ class _LeaveApplicationPageState extends State<LeaveApplicationPage> {
         return;
       }
 
-      final balances = await LeaveBalanceService.getStaffLeaveBalances(
-          staffId, DateTime.now().year);
+      await _leaveBalanceController.getLeaveBalances(
+          userId: staffId, year: DateTime.now().year);
 
       setState(() {
         _leaveBalances = {
-          for (var balance in balances) balance.leaveTypeId: balance
+          for (var balance in _leaveBalanceController.leaveBalances)
+            balance['leaveTypeId']: LeaveBalance.fromMap(balance)
         };
       });
     } catch (e) {
+      // Silently handle leave balance loading errors - not critical for form functionality
+      print('⚠️ Leave balance loading failed: $e');
     }
   }
 
@@ -234,9 +244,12 @@ class _LeaveApplicationPageState extends State<LeaveApplicationPage> {
       String? cloudinaryUrl;
       if (_attachedFile != null && !kIsWeb) {
         try {
-          final uploadResult = await UploadService.uploadImage(_attachedFile!);
-          cloudinaryUrl = uploadResult['url'];
+          final uploadResult =
+              await _uploadController.uploadImage(_attachedFile!);
+          cloudinaryUrl = uploadResult?['url'];
         } catch (e) {
+          // Silently handle file upload errors - attachment is optional
+          print('⚠️ File upload failed: $e');
         }
       }
 
@@ -255,7 +268,7 @@ class _LeaveApplicationPageState extends State<LeaveApplicationPage> {
         leaveType: _selectedLeaveType,
       );
 
-      final success = await LeaveService.createLeaveApplication(leave);
+      final success = await _leaveController.createLeaveApplication(leave);
 
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -4,7 +4,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:woosh/models/hive/order_model.dart';
 import 'package:woosh/models/client/client_model.dart';
 import 'package:woosh/models/Products_Inventory/product_model.dart';
-import 'package:woosh/services/core/product_service.dart';
 import 'package:woosh/services/core/currency_config_service.dart';
 
 import 'package:woosh/pages/order/product/product_detail_page.dart';
@@ -19,6 +18,9 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:hive/hive.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:woosh/controllers/productcontroller/product_controller.dart';
+import 'package:woosh/controllers/currencycontroller/currency_config_controller.dart';
+import 'package:woosh/controllers/stock_controller.dart';
 
 class ProductsGridPage extends StatefulWidget {
   final Client outlet;
@@ -48,6 +50,7 @@ class _ProductsGridPageState extends State<ProductsGridPage>
   late ProductHiveService _productHiveService;
   late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
   bool _isConnected = true;
+  late ProductController _productController;
 
   // Currency configuration
   CurrencyConfig? _userCurrencyConfig;
@@ -62,6 +65,7 @@ class _ProductsGridPageState extends State<ProductsGridPage>
   @override
   void initState() {
     super.initState();
+    _productController = Get.put(ProductController());
     _initializeAndLoad();
     _scrollController.addListener(_onScroll);
     _setupConnectivityListener();
@@ -75,7 +79,15 @@ class _ProductsGridPageState extends State<ProductsGridPage>
       if (mounted) {
         setState(() {});
       }
-    } catch (e) {}
+    } catch (e) {
+      print('❌ Error in ProductsGridPage [_loadCurrencyConfig]: $e');
+      // Add appropriate user-friendly error handling
+      if (mounted) {
+        Get.snackbar(
+            'Error', 'Failed to load currency configuration. Please try again.',
+            backgroundColor: Colors.red, colorText: Colors.white);
+      }
+    }
   }
 
   // Helper method to ensure Hive adapters are registered
@@ -269,7 +281,15 @@ class _ProductsGridPageState extends State<ProductsGridPage>
           });
         }
       } else {}
-    } catch (e) {}
+    } catch (e) {
+      print('❌ Error in ProductsGridPage [_loadFromCache]: $e');
+      // Add appropriate user-friendly error handling
+      if (mounted) {
+        Get.snackbar(
+            'Error', 'Failed to load cached products. Please try again.',
+            backgroundColor: Colors.red, colorText: Colors.white);
+      }
+    }
   }
 
   Future<void> _loadInitialData() async {
@@ -283,7 +303,7 @@ class _ProductsGridPageState extends State<ProductsGridPage>
     });
 
     try {
-      final products = await ProductService.getProducts(
+      await _productController.getProducts(
         page: 1,
         limit: 50, // Increased limit for better caching
         search: _currentSearchQuery,
@@ -292,14 +312,14 @@ class _ProductsGridPageState extends State<ProductsGridPage>
 
       if (mounted) {
         setState(() {
-          _products = products;
+          _products = _productController.products;
           _isLoading = false;
         });
 
         // Always save to cache when we get fresh data
-        await _saveToCache(products);
+        await _saveToCache(_productController.products);
         print(
-            '[ProductsGrid] ✅ Successfully cached ${products.length} products');
+            '[ProductsGrid] ✅ Successfully cached ${_productController.products.length} products');
       }
     } catch (e) {
       if (mounted) {
@@ -324,7 +344,15 @@ class _ProductsGridPageState extends State<ProductsGridPage>
         print(
             '[ProductsGrid] ⚠️ ProductHiveService not registered, cannot cache');
       }
-    } catch (e) {}
+    } catch (e) {
+      print('❌ Error in ProductsGridPage [_saveToCache]: $e');
+      // Add appropriate user-friendly error handling
+      if (mounted) {
+        Get.snackbar(
+            'Error', 'Failed to save products to cache. Please try again.',
+            backgroundColor: Colors.red, colorText: Colors.white);
+      }
+    }
   }
 
   Future<void> _loadMoreData() async {

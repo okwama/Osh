@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:woosh/models/leaves/leave_model.dart';
-import 'package:woosh/services/core/leave_service.dart';
+import 'package:woosh/controllers/leavecontroller/leave_controller.dart';
+import 'package:woosh/controllers/leavecontroller/leave_balance_controller.dart';
 import 'package:woosh/pages/Leave/leaveapplication_page.dart';
 import 'package:woosh/pages/Leave/leave_requests_page.dart';
 import 'package:intl/intl.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:woosh/services/core/leave_balance_service.dart';
 import 'package:woosh/utils/app_theme.dart';
 
 // NOTE: This dashboard is configured for sales reps to show only sick leave
@@ -34,10 +34,12 @@ class _LeaveDashboardPageState extends State<LeaveDashboardPage> {
   List<Map<String, dynamic>> _leaveBalances = [];
   Map<String, dynamic> _leaveStats = {};
   final int _currentYear = DateTime.now().year;
+  late LeaveBalanceController _leaveBalanceController;
 
   @override
   void initState() {
     super.initState();
+    _leaveBalanceController = Get.put(LeaveBalanceController());
     _loadDashboardData();
     _debugAuthStatus();
   }
@@ -81,30 +83,35 @@ class _LeaveDashboardPageState extends State<LeaveDashboardPage> {
 
       // First sync the leave balances to ensure accuracy
       // Note: Only sick leave balances will be loaded for sales reps
-      await LeaveBalanceService.syncLeaveBalances(staffId, _currentYear);
+      await _leaveBalanceController.getLeaveBalances(
+          userId: staffId, year: _currentYear);
 
       final results = await Future.wait([
-        LeaveBalanceService.getStaffLeaveBalances(staffId, _currentYear)
-            .then((balances) {
+        _leaveBalanceController
+            .getLeaveBalances(userId: staffId, year: _currentYear)
+            .then((_) {
           // Filter to show only sick leave for sales reps
-          final sickLeaveBalances = balances
+          final sickLeaveBalances = _leaveBalanceController.leaveBalances
               .where((balance) =>
-                  balance.leaveType?.name.toLowerCase().contains('sick') ==
+                  balance['leaveType']?['name']
+                      ?.toString()
+                      .toLowerCase()
+                      .contains('sick') ==
                   true)
               .toList();
 
           for (final balance in sickLeaveBalances) {
             print(
-                '   - ${balance.leaveType?.name}: ${balance.accrued} accrued, ${balance.used} used');
+                '   - ${balance['leaveType']?['name']}: ${balance['accrued']} accrued, ${balance['used']} used');
           }
           return sickLeaveBalances
               .map((balance) => {
                     'balance': balance,
-                    'leaveType': balance.leaveType,
+                    'leaveType': balance['leaveType'],
                   })
               .toList();
         }),
-        LeaveService.getLeaveStats(staffId, _currentYear),
+        Get.find<LeaveController>().getLeaveStats(staffId, _currentYear),
       ]);
 
       setState(() {
@@ -517,8 +524,8 @@ class _LeaveDashboardPageState extends State<LeaveDashboardPage> {
               }
 
               if (staffId != null && staffId != 0) {
-                await LeaveBalanceService.syncLeaveBalances(
-                    staffId, _currentYear);
+                await _leaveBalanceController.getLeaveBalances(
+                    userId: staffId, year: _currentYear);
                 _loadDashboardData();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(

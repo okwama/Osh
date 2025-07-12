@@ -490,15 +490,21 @@ class ClientStorageService {
       // Close boxes if they're open
       try {
         await Hive.box('client_storage').close();
-      } catch (e) {}
+      } catch (e) {
+        print('⚠️ Could not close client_storage box: $e');
+      }
 
       try {
         await Hive.box('client_metadata').close();
-      } catch (e) {}
+      } catch (e) {
+        print('⚠️ Could not close client_metadata box: $e');
+      }
 
       try {
         await Hive.box('client_sync_queue').close();
-      } catch (e) {}
+      } catch (e) {
+        print('⚠️ Could not close client_sync_queue box: $e');
+      }
 
       // Delete boxes from disk
       await Hive.deleteBoxFromDisk('client_storage');

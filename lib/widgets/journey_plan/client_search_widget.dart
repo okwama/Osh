@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:woosh/models/client/client_model.dart';
-import 'package:woosh/services/database/pagination_service.dart';
-import 'package:woosh/services/database_service.dart';
 import 'package:woosh/widgets/skeleton_loader.dart';
 import 'package:woosh/widgets/client/client_list_item.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:get/get.dart';
+import 'package:woosh/controllers/journeycontroller/journey_plan_controller.dart';
 
 class ClientSearchWidget extends StatefulWidget {
   final Function(Client) onClientSelected;
@@ -36,14 +36,12 @@ class _ClientSearchWidgetState extends State<ClientSearchWidget> {
   final Map<String, List<Client>> _searchCache = {};
 
   // Service instances
-  late final DatabaseService _db;
-  late final PaginationService _paginationService;
+  late final JourneyPlanController _journeyPlanController;
 
   @override
   void initState() {
     super.initState();
-    _db = DatabaseService.instance;
-    _paginationService = PaginationService.instance;
+    _journeyPlanController = Get.find<JourneyPlanController>();
 
     _allClients = widget.initialClients;
     _filteredClients = _allClients;
@@ -91,57 +89,20 @@ class _ClientSearchWidgetState extends State<ClientSearchWidget> {
 
     try {
       // Get current user's country ID for filtering
-      final currentUser = await _db.getCurrentUserDetails();
-      final countryId = currentUser['countryId'];
+      final currentUser = await _journeyPlanController.getCurrentUserDetails();
+      final countryId = currentUser?['countryId'];
 
       print('🔍 Loading clients for country ID: $countryId');
 
-      final result = await _paginationService.fetchOffset(
-        table: 'Clients',
-        page: 1,
-        limit: 100,
-        filters: {
-          'countryId': countryId,
-        },
-        additionalWhere: 'countryId IS NOT NULL AND countryId > 0',
-        orderBy: 'id',
-        orderDirection: 'DESC',
-        whereParams: _whereParams,
-        columns: [
-          'id',
-          'name',
-          'address',
-          'contact',
-          'latitude',
-          'longitude',
-          'email',
-          'region_id',
-          'region',
-          'countryId',
-        ],
-      );
-
-      final clients = result.items
-          .map((row) => Client(
-                id: row['id'] as int,
-                name: row['name'] as String,
-                address: row['address'] as String? ?? '',
-                contact: row['contact'] as String?,
-                latitude: row['latitude'] as double?,
-                longitude: row['longitude'] as double?,
-                email: row['email'] as String?,
-                regionId: row['region_id'] as int? ?? 0,
-                region: row['region'] as String? ?? '',
-                countryId: row['countryId'] as int? ?? 0,
-              ))
-          .toList();
+      final clients = await _journeyPlanController.searchClients('');
 
       if (mounted) {
         setState(() {
           _allClients = clients;
           _filteredClients = _allClients;
           _currentPage = 1;
-          _hasMoreData = result.hasMore;
+          _hasMoreData =
+              clients.length >= 100; // Assume more data if we got full page
         });
       }
     } catch (e) {
@@ -171,51 +132,13 @@ class _ClientSearchWidgetState extends State<ClientSearchWidget> {
     });
 
     try {
-      final currentUser = await _db.getCurrentUserDetails();
-      final countryId = currentUser['countryId'];
+      final currentUser = await _journeyPlanController.getCurrentUserDetails();
+      final countryId = currentUser?['countryId'];
 
       print(
           '📍 Loading more clients for country ID: $countryId - page ${_currentPage + 1}');
 
-      final result = await _paginationService.fetchOffset(
-        table: 'Clients',
-        page: _currentPage + 1,
-        limit: 100,
-        filters: {
-          'countryId': countryId,
-        },
-        additionalWhere: 'countryId IS NOT NULL AND countryId > 0',
-        orderBy: 'id',
-        orderDirection: 'DESC',
-        whereParams: _whereParams,
-        columns: [
-          'id',
-          'name',
-          'address',
-          'contact',
-          'latitude',
-          'longitude',
-          'email',
-          'region_id',
-          'region',
-          'countryId',
-        ],
-      );
-
-      final clients = result.items
-          .map((row) => Client(
-                id: row['id'] as int,
-                name: row['name'] as String,
-                address: row['address'] as String? ?? '',
-                contact: row['contact'] as String?,
-                latitude: row['latitude'] as double?,
-                longitude: row['longitude'] as double?,
-                email: row['email'] as String?,
-                regionId: row['region_id'] as int? ?? 0,
-                region: row['region'] as String? ?? '',
-                countryId: row['countryId'] as int? ?? 0,
-              ))
-          .toList();
+      final clients = await _journeyPlanController.searchClients('');
 
       if (mounted) {
         if (clients.isEmpty) {
@@ -229,7 +152,8 @@ class _ClientSearchWidgetState extends State<ClientSearchWidget> {
                 clients.where((c) => !existingIds.contains(c.id)).toList();
             _allClients.addAll(newClients);
             _currentPage++;
-            _hasMoreData = result.hasMore;
+            _hasMoreData =
+                clients.length >= 100; // Assume more data if we got full page
             _updateFilteredClients();
           });
         }

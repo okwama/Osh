@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import 'package:woosh/models/hive/order_model.dart';
 import 'package:woosh/models/client/client_model.dart';
 import 'package:woosh/pages/order/product/products_grid_page.dart';
-import 'package:woosh/controllers/cart_controller.dart';
+import 'package:woosh/controllers/cartcontroller/cart_controller.dart';
 import 'package:woosh/services/core/order_service.dart';
 
 class AddOrderPage extends StatefulWidget {

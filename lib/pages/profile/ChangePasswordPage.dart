@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:woosh/controllers/profile_controller.dart';
+import 'package:woosh/controllers/profilecontroller/profile_controller.dart';
 import 'package:woosh/utils/app_theme.dart';
+import 'package:woosh/utils/error_handler.dart';
 import 'package:woosh/widgets/gradient_app_bar.dart';
 
 class ChangePasswordPage extends StatefulWidget {
@@ -41,19 +42,22 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     if (_currentPasswordController.text.isEmpty ||
         _newPasswordController.text.isEmpty ||
         _confirmPasswordController.text.isEmpty) {
-      Get.snackbar('Error', 'All fields are required.');
+      ErrorHandler.handleValidationError('Required fields empty',
+          context: 'ChangePasswordPage._changePassword');
       return;
     }
 
     // Validate password match
     if (_newPasswordController.text != _confirmPasswordController.text) {
-      Get.snackbar('Error', 'New passwords do not match.');
+      ErrorHandler.handleValidationError('Password mismatch',
+          context: 'ChangePasswordPage._changePassword');
       return;
     }
 
     // Validate password strength
     if (_newPasswordController.text.length < 8) {
-      Get.snackbar('Error', 'Password must be at least 8 characters long.');
+      ErrorHandler.handleValidationError('Password too short',
+          context: 'ChangePasswordPage._changePassword');
       return;
     }
 
@@ -68,10 +72,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       // Check for success and navigate back if successful
       if (controller.passwordSuccess.value.isNotEmpty) {
         // Show success message
-        Get.snackbar('Success', controller.passwordSuccess.value,
-            backgroundColor: Colors.green.withOpacity(0.1),
-            colorText: Colors.green[700],
-            duration: const Duration(seconds: 3));
+        ErrorHandler.showSuccessSnackbar(controller.passwordSuccess.value);
 
         // Delay navigation to allow user to see success message
         Future.delayed(const Duration(seconds: 1), () {
@@ -79,20 +80,13 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
         });
       } else if (controller.passwordError.value.isNotEmpty) {
         // Show error message
-        Get.snackbar('Error', controller.passwordError.value,
-            backgroundColor: Colors.red.withOpacity(0.1),
-            colorText: Colors.red[700],
-            duration: const Duration(seconds: 3));
+        ErrorHandler.handleGeneralError(controller.passwordError.value, context: 'ChangePasswordPage._changePassword');
       } else {
         // If neither success nor error message is set
-        Get.snackbar('Error', 'Unknown error occurred. Please try again.',
-            backgroundColor: Colors.red.withOpacity(0.1),
-            colorText: Colors.red[700]);
+        ErrorHandler.handleGeneralError('Unknown error occurred', context: 'ChangePasswordPage._changePassword', customMessage: 'Unknown error occurred. Please try again.');
       }
     } catch (e) {
-      Get.snackbar('Error', 'An unexpected error occurred: $e',
-          backgroundColor: Colors.red.withOpacity(0.1),
-          colorText: Colors.red[700]);
+      ErrorHandler.handleGeneralError(e, context: 'ChangePasswordPage._changePassword');
     }
   }
 

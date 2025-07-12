@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:woosh/controllers/home_controller.dart';
+import 'package:woosh/controllers/homecontroller/home_controller.dart';
 import 'package:woosh/pages/Leave/leave_dashboard_page.dart';
 import 'package:woosh/pages/client/viewclient_page.dart';
 import 'package:woosh/pages/journeyplan/journeyplans_page.dart';

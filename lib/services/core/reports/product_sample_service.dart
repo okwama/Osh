@@ -1,5 +1,6 @@
 import 'package:woosh/models/journeyplan/report/report_model.dart';
 import 'package:woosh/models/journeyplan/report/product_sample_item_model.dart';
+import 'package:woosh/models/journeyplan/report/productSample_model.dart';
 import 'package:woosh/models/client/client_model.dart';
 import 'package:woosh/services/database_service.dart';
 import 'report_service.dart';
@@ -75,7 +76,6 @@ class ProductSampleService {
 
         // Commit transaction
         await _db.query('COMMIT');
-
 
         // Return simple success report without fetching from database
         return Report(
@@ -158,6 +158,68 @@ class ProductSampleService {
       return result.affectedRows! > 0;
     } catch (e) {
       return false;
+    }
+  }
+
+  /// Get product samples by journey plan for controller
+  static Future<List<Report>> getProductSamplesByJourneyPlan(
+      int journeyPlanId) async {
+    try {
+      const sql = '''
+        SELECT r.id
+        FROM Report r
+        JOIN ProductsSample ps ON r.id = ps.reportId
+        WHERE r.type = 'PRODUCT_SAMPLE' 
+        AND r.journeyPlanId = ?
+        ORDER BY r.createdAt DESC
+      ''';
+
+      final results = await _db.query(sql, [journeyPlanId]);
+      final reportIds = results.map((row) => row.fields['id'] as int).toList();
+
+      // Fetch full report details
+      final reports = <Report>[];
+      for (final reportId in reportIds) {
+        final report = await ReportService.getReportById(reportId);
+        if (report != null) {
+          reports.add(report);
+        }
+      }
+
+      return reports;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Submit product sample for controller
+  static Future<Report> submitProductSample({
+    required int journeyPlanId,
+    required int clientId,
+    required List<ProductSample> productSamples,
+    int? userId,
+  }) async {
+    try {
+      // Convert ProductSample to ProductSampleItem for the service
+      final productSampleItems = productSamples
+          .map((ps) => ProductSampleItem(
+                productName: ps.productName ?? '',
+                quantity: ps.quantity ?? 0,
+                reason: ps.reason ?? '',
+              ))
+          .toList();
+
+      // Submit using existing service method
+      final report = await submitProductSampleReport(
+        journeyPlanId: journeyPlanId,
+        clientId: clientId,
+        productSampleItems: productSampleItems,
+        userId: userId,
+      );
+
+      return report;
+    } catch (e) {
+      rethrow;
     }
   }
 }

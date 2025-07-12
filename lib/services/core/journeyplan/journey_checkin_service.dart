@@ -249,6 +249,90 @@ class JourneyCheckInService {
     onCheckInError?.call(message);
   }
 
+  /// Simple check-in method for controller
+  Future<bool> checkIn(int journeyPlanId, double latitude, double longitude,
+      String address) async {
+    try {
+      // Get journey plan
+      final journeyPlan =
+          await JourneyPlanService.getJourneyPlanById(journeyPlanId);
+      if (journeyPlan == null) {
+        print('❌ Journey plan not found: $journeyPlanId');
+        return false;
+      }
+
+      // Update journey plan status
+      final updatedPlan = await JourneyPlanService.updateJourneyPlan(
+        journeyId: journeyPlanId,
+        clientId: journeyPlan.client.id,
+        status: JourneyPlan.statusInProgress,
+        latitude: latitude,
+        longitude: longitude,
+        checkInTime: DateTime.now(),
+      );
+
+      print('✅ Check-in successful for journey plan: $journeyPlanId');
+      return true;
+    } catch (e) {
+      print('❌ Check-in failed for journey plan: $journeyPlanId - $e');
+      return false;
+    }
+  }
+
+  /// Check-out method for controller
+  Future<bool> checkOut(int journeyPlanId, double latitude, double longitude,
+      String address) async {
+    try {
+      // Get journey plan
+      final journeyPlan =
+          await JourneyPlanService.getJourneyPlanById(journeyPlanId);
+      if (journeyPlan == null) {
+        print('❌ Journey plan not found: $journeyPlanId');
+        return false;
+      }
+
+      // Update journey plan status
+      final updatedPlan = await JourneyPlanService.updateJourneyPlan(
+        journeyId: journeyPlanId,
+        clientId: journeyPlan.client.id,
+        status: JourneyPlan.statusCompleted,
+        checkoutLatitude: latitude,
+        checkoutLongitude: longitude,
+        checkoutTime: DateTime.now(),
+      );
+
+      print('✅ Check-out successful for journey plan: $journeyPlanId');
+      return true;
+    } catch (e) {
+      print('❌ Check-out failed for journey plan: $journeyPlanId - $e');
+      return false;
+    }
+  }
+
+  /// Get check-in status for controller
+  Future<Map<String, dynamic>?> getCheckinStatus(int journeyPlanId) async {
+    try {
+      final journeyPlan =
+          await JourneyPlanService.getJourneyPlanById(journeyPlanId);
+      if (journeyPlan == null) {
+        return null;
+      }
+
+      return {
+        'status': journeyPlan.status,
+        'checkInTime': journeyPlan.checkInTime,
+        'checkoutTime': journeyPlan.checkoutTime,
+        'latitude': journeyPlan.latitude,
+        'longitude': journeyPlan.longitude,
+        'checkoutLatitude': journeyPlan.checkoutLatitude,
+        'checkoutLongitude': journeyPlan.checkoutLongitude,
+      };
+    } catch (e) {
+      print('❌ Error getting check-in status: $e');
+      return null;
+    }
+  }
+
   /// Dispose resources
   void dispose() {
     _retryTimer?.cancel();

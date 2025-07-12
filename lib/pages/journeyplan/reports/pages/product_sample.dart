@@ -6,8 +6,9 @@ import 'package:woosh/models/Products_Inventory/product_model.dart';
 import 'package:woosh/models/journeyplan/report/product_sample_item_model.dart';
 import 'package:woosh/models/journeyplan/report/report_model.dart';
 import 'package:woosh/models/journeyplan/report/productReport_model.dart';
-import 'package:woosh/services/core/reports/product_sample_service.dart';
-import 'package:woosh/services/core/product_service.dart';
+import 'package:woosh/models/journeyplan/report/productSample_model.dart';
+import 'package:woosh/controllers/reportcontrollers/product_sample_controller.dart';
+import 'package:woosh/controllers/productcontroller/product_controller.dart';
 import 'package:woosh/utils/app_theme.dart';
 import 'package:woosh/widgets/gradient_app_bar.dart';
 
@@ -28,6 +29,9 @@ class ProductSamplePage extends StatefulWidget {
 class _ProductSamplePageState extends State<ProductSamplePage> {
   final _quantityController = TextEditingController();
   final _reasonController = TextEditingController();
+  final ProductSampleController _productSampleController =
+      Get.put(ProductSampleController());
+  final ProductController _productController = Get.put(ProductController());
   bool _isSubmitting = false;
   bool _isLoading = true;
   ProductModel? _selectedProduct;
@@ -44,7 +48,7 @@ class _ProductSamplePageState extends State<ProductSamplePage> {
 
   Future<void> _loadProducts() async {
     try {
-      final products = await ProductService.getProducts(
+      final products = await _productController.getProducts(
         page: 1,
         limit: 1000,
       );
@@ -143,13 +147,24 @@ class _ProductSamplePageState extends State<ProductSamplePage> {
         );
       }).toList();
 
-      // Use new ProductSampleService to submit report
-      await ProductSampleService.submitProductSampleReport(
+      // Use ProductSampleController to submit report
+      final success = await _productSampleController.submitProductSample(
         journeyPlanId: widget.journeyPlan.id!,
         clientId: widget.journeyPlan.client.id,
-        productSampleItems: items,
+        productSamples: items
+            .map((item) => ProductSample(
+                  reportId: 0,
+                  productName: item.productName,
+                  quantity: item.quantity,
+                  reason: item.reason,
+                ))
+            .toList(),
         userId: salesRepId,
       );
+
+      if (!success) {
+        throw Exception('Failed to submit product sample report');
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -573,4 +588,3 @@ class _ProductSamplePageState extends State<ProductSamplePage> {
     super.dispose();
   }
 }
-

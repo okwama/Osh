@@ -4,7 +4,7 @@ import 'package:get_storage/get_storage.dart';
 import 'package:woosh/models/journeyplan/journeyplan_model.dart';
 import 'package:woosh/models/journeyplan/report/report_model.dart';
 import 'package:woosh/models/journeyplan/report/feedbackReport_model.dart';
-import 'package:woosh/services/core/reports/feedback_report_service.dart';
+import 'package:woosh/controllers/reportcontrollers/feedback_report_controller.dart';
 import 'package:woosh/utils/app_theme.dart';
 import 'package:woosh/utils/optimistic_ui_handler.dart';
 import 'package:woosh/widgets/gradient_app_bar.dart';
@@ -25,6 +25,8 @@ class FeedbackReportPage extends StatefulWidget {
 
 class _FeedbackReportPageState extends State<FeedbackReportPage> {
   final _commentController = TextEditingController();
+  final FeedbackReportController _feedbackReportController =
+      Get.put(FeedbackReportController());
   bool _isSubmitting = false;
 
   Future<void> _submitReport() async {
@@ -51,18 +53,23 @@ class _FeedbackReportPageState extends State<FeedbackReportPage> {
             salesRepData is Map<String, dynamic> ? salesRepData['id'] : null;
 
         if (salesRepId == null) {
-          throw Exception("User not authenticated: Could not determine salesRep ID");
+          throw Exception(
+              "User not authenticated: Could not determine salesRep ID");
         }
 
         print('📝 Submitting feedback report');
 
-        // Submit feedback report
-        await FeedbackReportService.submitFeedbackReport(
+        // Submit feedback report using controller
+        final success = await _feedbackReportController.submitFeedbackReport(
           journeyPlanId: widget.journeyPlan.id!,
           clientId: widget.journeyPlan.client.id,
           comment: _commentController.text.trim(),
           userId: salesRepId,
         );
+
+        if (!success) {
+          throw Exception('Failed to submit feedback report');
+        }
 
         print('✅ Feedback report submitted successfully');
       },

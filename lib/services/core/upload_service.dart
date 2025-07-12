@@ -23,8 +23,7 @@ class UploadService {
       if (isImage) {
         // Compress the image first
         uploadFile = await _compressImage(file);
-      } else {
-      }
+      } else {}
 
       // Read the file
       final bytes = await uploadFile.readAsBytes();
@@ -50,6 +49,80 @@ class UploadService {
       request.fields['unique_filename'] = 'true';
 
       // Generate signature (simplified - in production, this should be done server-side)
+      final signature = _generateSignature(request.fields);
+      request.fields['signature'] = signature;
+
+      // Send request
+      final response = await request.send();
+      final responseData = await response.stream.bytesToString();
+
+      if (isImage) {
+        // Clean up temporary file if it was compressed
+        if (uploadFile.path != file.path) {
+          await uploadFile.delete();
+        }
+      }
+
+      if (response.statusCode == 200) {
+        // Parse response
+        final responseMap = _parseResponse(responseData);
+        return {
+          'url': responseMap['secure_url'],
+          'fileId': responseMap['public_id'],
+          'name': responseMap['original_filename'],
+          'format': responseMap['format'],
+          'size': responseMap['bytes'],
+          'width': responseMap['width'],
+          'height': responseMap['height'],
+        };
+      } else {
+        throw Exception(
+            'Upload failed: ${response.statusCode} - $responseData');
+      }
+    } catch (e) {
+      throw Exception('File upload error: $e');
+    }
+  }
+
+  /// Uploads any file (image or document) to Cloudinary with folder support
+  static Future<Map<String, dynamic>> uploadFile(File file,
+      {String? folder}) async {
+    try {
+      // Detect file type by extension
+      final ext = file.path.split('.').last.toLowerCase();
+      final isImage =
+          ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].contains(ext);
+      File uploadFile = file;
+
+      if (isImage) {
+        // Compress the image first
+        uploadFile = await _compressImage(file);
+      }
+
+      // Read the file
+      final bytes = await uploadFile.readAsBytes();
+
+      // Create multipart request
+      final request = http.MultipartRequest('POST', Uri.parse(_cloudinaryUrl));
+
+      // Add file to request
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'file',
+          bytes,
+          filename: 'file_${DateTime.now().millisecondsSinceEpoch}.$ext',
+        ),
+      );
+
+      // Add Cloudinary parameters
+      request.fields['api_key'] = CloudinaryConfig.apiKey;
+      request.fields['timestamp'] =
+          (DateTime.now().millisecondsSinceEpoch / 1000).round().toString();
+      request.fields['folder'] = folder ?? 'whoosh';
+      request.fields['use_filename'] = 'true';
+      request.fields['unique_filename'] = 'true';
+
+      // Generate signature
       final signature = _generateSignature(request.fields);
       request.fields['signature'] = signature;
 
@@ -168,7 +241,6 @@ class UploadService {
     final bytes = utf8.encode(stringToSign);
     final digest = sha1.convert(bytes);
 
-
     return digest.toString();
   }
 
@@ -177,7 +249,6 @@ class UploadService {
     try {
       // Use proper JSON parsing
       final Map<String, dynamic> result = json.decode(responseData);
-
 
       return result;
     } catch (e) {
@@ -250,7 +321,6 @@ class UploadService {
       'unique_filename': 'true',
       'api_key': CloudinaryConfig.apiKey,
     };
-
 
     final signature = _generateSignature(testFields);
   }

@@ -1,5 +1,4 @@
-// import 'package:flutter/material.dart';
-// import 'package:woosh/services/core/version_check_service.dart';
+// Widget is commented out - remove service imports
 
 // class VersionInfoWidget extends StatefulWidget {
 //   const VersionInfoWidget({super.key});

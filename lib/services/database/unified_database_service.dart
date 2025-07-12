@@ -320,7 +320,9 @@ class UnifiedDatabaseService {
       if (connection != null) {
         try {
           await connection.query('ROLLBACK');
-        } catch (rollbackError) {}
+        } catch (rollbackError) {
+          print('⚠️ Could not rollback transaction: $rollbackError');
+        }
       }
       rethrow;
     }
@@ -366,7 +368,10 @@ class UnifiedDatabaseService {
       _lastUsed.remove(connection);
       try {
         connection.close();
-      } catch (e) {}
+      } catch (e) {
+        // Ignore connection close errors during cleanup
+        print('⚠️ Could not close idle connection: $e');
+      }
     }
 
     if (toRemove.isNotEmpty) {
@@ -428,7 +433,10 @@ class UnifiedDatabaseService {
     for (final connection in _connections) {
       try {
         await connection.close();
-      } catch (e) {}
+      } catch (e) {
+        // Ignore connection close errors during disposal
+        print('⚠️ Could not close connection during disposal: $e');
+      }
     }
 
     _connections.clear();

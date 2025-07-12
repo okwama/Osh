@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:woosh/models/order/my_order_model.dart';
 import 'package:woosh/models/order/orderitem_model.dart';
 import 'package:woosh/models/Products_Inventory/price_option_model.dart';
-import 'package:woosh/services/core/order_service.dart';
+import 'package:woosh/controllers/ordercontroller/order_detail_controller.dart';
 import 'package:woosh/pages/order/updateOrder_page.dart';
 import 'package:woosh/utils/image_utils.dart';
 import 'package:woosh/utils/date_utils.dart' as custom_date;
@@ -27,6 +27,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
   bool _isUpdating = false;
   List<OrderItem> _orderItems = [];
   Map<String, dynamic>? _voidStatus;
+  late OrderDetailController _orderDetailController;
 
   final currencyFormat = NumberFormat.currency(
     locale: 'en_KE',
@@ -37,29 +38,30 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
   @override
   void initState() {
     super.initState();
+    _orderDetailController = Get.put(OrderDetailController());
     _loadOrderItems();
     _checkVoidStatus();
   }
 
   Future<void> _loadOrderItems() async {
     try {
-      final items = await OrderService.getOrderItems(widget.order!.id);
+      final items =
+          await _orderDetailController.getOrderItems(widget.order!.id);
       if (mounted) {
         setState(() {
           _orderItems = items;
         });
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   Future<void> _checkVoidStatus() async {
     try {
-      final status =
-          await OrderService.checkVoidStatus(orderId: widget.order!.id);
+      // TODO: Implement void status check when service method is available
+      // final status = await _orderDetailController.checkVoidStatus(widget.order!.id);
       if (mounted) {
         setState(() {
-          _voidStatus = status;
+          _voidStatus = null; // Placeholder until method is implemented
         });
       }
     } catch (e) {
@@ -247,7 +249,8 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
         setState(() => _isUpdating = true);
 
         // Delete order
-        final result = await OrderService.deleteOrder(widget.order!.id);
+        final result =
+            await _orderDetailController.deleteOrder(widget.order!.id);
 
         if (result['success'] == true) {
           // Show success message with more details
@@ -360,7 +363,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
         setState(() => _isUpdating = true);
 
         // Submit void request to API
-        final result = await OrderService.requestOrderVoid(
+        final result = await _orderDetailController.requestOrderVoid(
           orderId: widget.order!.id,
           reason: 'Customer requested void',
         );
@@ -472,7 +475,8 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
 
     try {
       // Check if order can be updated
-      final canUpdate = await OrderService.canUpdateOrder(widget.order!.id);
+      final canUpdate =
+          await _orderDetailController.canUpdateOrder(widget.order!.id);
 
       if (!canUpdate) {
         Get.snackbar(
@@ -495,7 +499,8 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
       // Refresh order data if update was successful
       if (result == true) {
         // Refresh the current order data
-        final updatedOrder = await OrderService.getOrderById(widget.order!.id);
+        final updatedOrder =
+            await _orderDetailController.getOrderById(widget.order!.id);
         if (updatedOrder != null) {
           setState(() {
             // Update the order data

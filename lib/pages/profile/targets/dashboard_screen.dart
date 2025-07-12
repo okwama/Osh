@@ -7,6 +7,10 @@ import 'package:woosh/widgets/gradient_app_bar.dart';
 import 'package:woosh/widgets/skeleton_loader.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
+import 'package:woosh/models/targets/visit_targets_model.dart';
+import 'package:woosh/models/targets/new_clients_progress_model.dart';
+import 'package:woosh/models/targets/date_range_model.dart';
+import 'package:woosh/models/targets/product_sales_models.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});

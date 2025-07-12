@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:woosh/models/client/client_model.dart';
-import 'package:woosh/controllers/client_view_controller.dart';
+import 'package:woosh/controllers/clientcontroler/client_view_controller.dart';
 import 'package:woosh/pages/order/addorder_page.dart';
 import 'package:woosh/pages/client/addclient_page.dart';
 import 'package:woosh/pages/client/clientdetails.dart';

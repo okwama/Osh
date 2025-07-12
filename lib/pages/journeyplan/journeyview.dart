@@ -20,7 +20,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:woosh/services/core/journeyplan/journey_plan_service.dart';
 import 'package:woosh/utils/safe_error_handler.dart';
 import 'package:woosh/services/core/upload_service.dart';
-import 'package:woosh/controllers/journey_view_controller.dart';
+import 'package:woosh/controllers/journeycontroller/journey_view_controller.dart';
 import 'package:woosh/widgets/journey_view/journey_status_card.dart';
 import 'package:woosh/widgets/journey_view/journey_details_card.dart';
 import 'package:woosh/widgets/journey_view/edit_notes_dialog.dart';
