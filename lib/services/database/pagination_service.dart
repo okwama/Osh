@@ -1,5 +1,5 @@
 import 'package:mysql1/mysql1.dart';
-import 'query_executor.dart';
+import 'unified_database_service.dart';
 
 /// Paginated result container for efficient data fetching
 class PaginatedResult<T> {
@@ -34,7 +34,7 @@ class PaginationService {
 
   PaginationService._();
 
-  final QueryExecutor _queryExecutor = QueryExecutor.instance;
+  final UnifiedDatabaseService _queryExecutor = UnifiedDatabaseService.instance;
 
   /// Fetch paginated results using keyset pagination (recommended for large datasets)
   Future<PaginatedResult<ResultRow>> fetchKeyset({
@@ -51,7 +51,7 @@ class PaginationService {
 
     try {
       // Validate and clamp limit
-      limit = limit.clamp(1, 1000);
+      limit = limit.clamp(1, 10000); // Increased from 1000 to 10000
 
       // Build WHERE clause
       final whereBuffer = StringBuffer();
@@ -141,12 +141,13 @@ class PaginationService {
     String? orderDirection,
     List<String>? columns,
     String? additionalWhere,
+    required List whereParams,
   }) async {
     final queryStopwatch = Stopwatch()..start();
 
     try {
       page = page > 0 ? page : 1;
-      limit = limit.clamp(1, 1000);
+      limit = limit.clamp(1, 10000); // Increased from 1000 to 10000
 
       // Build WHERE clause
       final whereBuffer = StringBuffer();
@@ -174,7 +175,7 @@ class PaginationService {
 
       // Get total count (only if needed)
       int? total;
-      if (page == 1 || limit < 1000) {
+      if (page == 1 || limit < 10000) {
         // Only count for first page or reasonable limits
         final countResults = await _queryExecutor.execute(
           'SELECT COUNT(*) as total FROM $table $whereClause',
@@ -289,8 +290,8 @@ class PaginationService {
       errors.add('Page must be greater than 0');
     }
 
-    if (limit != null && (limit < 1 || limit > 1000)) {
-      errors.add('Limit must be between 1 and 1000');
+    if (limit != null && (limit < 1 || limit > 10000)) {
+      errors.add('Limit must be between 1 and 10000');
     }
 
     if (orderDirection != null &&
@@ -303,7 +304,7 @@ class PaginationService {
       'errors': errors,
       'validatedParams': {
         'page': page?.clamp(1, double.infinity) ?? 1,
-        'limit': limit?.clamp(1, 1000) ?? 100,
+        'limit': limit?.clamp(1, 10000) ?? 100,
         'orderBy': orderBy,
         'orderDirection': orderDirection?.toUpperCase() ?? 'ASC',
       },

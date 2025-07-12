@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:mysql1/mysql1.dart';
 import 'package:woosh/services/database/connection_pool.dart';
-import 'package:woosh/services/database/query_executor.dart';
+import 'package:woosh/services/database/unified_database_service.dart';
 import 'package:woosh/services/database/pagination_service.dart';
 import 'package:woosh/services/database/auth_service.dart';
 
@@ -13,24 +13,57 @@ class DatabaseService {
 
   DatabaseService._();
 
+  bool _isInitialized = false;
+  bool get isInitialized => _isInitialized;
+
   // Specialized services
   final ConnectionPool _connectionPool = ConnectionPool.instance;
-  final QueryExecutor _queryExecutor = QueryExecutor.instance;
+  final UnifiedDatabaseService _queryExecutor = UnifiedDatabaseService.instance;
   final PaginationService _paginationService = PaginationService.instance;
   final DatabaseAuthService _authService = DatabaseAuthService.instance;
 
   /// Initialize the database service
   Future<void> initialize() async {
+    if (_isInitialized) return;
+
     try {
       await _connectionPool.initialize();
+      _isInitialized = true;
+      print('✅ Database service initialized successfully');
     } catch (e) {
+      print('❌ Database service initialization failed: $e');
+      _isInitialized = false;
       rethrow;
     }
   }
 
-  /// Execute a query with automatic connection management
+  /// Execute a query with automatic connection management and error handling
   Future<Results> query(String sql, [List<Object?>? values]) async {
-    return _queryExecutor.execute(sql, values);
+    try {
+      return await _queryExecutor.execute(sql, values);
+    } catch (e) {
+      // Handle socket connection issues
+      if (e.toString().contains('Socket has been closed') ||
+          e.toString().contains('SocketException')) {
+        print('🔌 Socket connection issue detected, attempting recovery...');
+
+        // Try to reinitialize the connection pool
+        try {
+          await _connectionPool.dispose();
+          await _connectionPool.initialize();
+          print('✅ Connection pool reinitialized successfully');
+
+          // Retry the query once
+          return await _queryExecutor.execute(sql, values);
+        } catch (retryError) {
+          print('❌ Recovery failed: $retryError');
+          throw Exception(
+              'Database connection failed after recovery attempt: $e');
+        }
+      }
+
+      rethrow;
+    }
   }
 
   /// Execute a transaction
@@ -80,6 +113,7 @@ class DatabaseService {
       filters: filters,
       orderBy: orderBy,
       orderDirection: orderDirection,
+      whereParams: [], // Add empty whereParams array
       columns: columns,
       additionalWhere: additionalWhere,
     );
@@ -138,37 +172,102 @@ class DatabaseService {
 
   /// Test database connectivity
   Future<Map<String, dynamic>> testConnection() async {
-    try {
-      final startTime = DateTime.now();
+    const int maxRetries = 2;
+    const Duration baseDelay = Duration(seconds: 2);
 
-      // Test connection pool
-      final connection = await _connectionPool.getConnection();
-      final endTime = DateTime.now();
-      final duration = endTime.difference(startTime);
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        print('🔍 Testing database connection (attempt $attempt)...');
 
-      // Test a simple query
-      final results = await connection.query('SELECT 1 as test').timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          throw TimeoutException('Query test timed out');
-        },
-      );
+        // First check if pool is initialized
+        if (!_isInitialized) {
+          print(
+              '⚠️ Database service not initialized, attempting initialization...');
+          await initialize();
+        }
 
-      _connectionPool.returnConnection(connection);
+        final startTime = DateTime.now();
 
-      return {
-        'success': true,
-        'message': 'Database connection and query test successful',
-        'response_time_ms': duration.inMilliseconds,
-        'query_test_passed': results.isNotEmpty,
-        'pool_metrics': _connectionPool.getMetrics(),
-      };
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'Database connection failed: $e',
-        'pool_metrics': _connectionPool.getMetrics(),
-      };
+        // Get connection from pool
+        print('🔄 Getting connection from pool...');
+        final connection = await _connectionPool.getConnection();
+
+        // Test a simple query
+        print('🔄 Testing query execution...');
+        final results = await connection.query('SELECT 1 as test').timeout(
+          const Duration(seconds: 5),
+          onTimeout: () {
+            throw TimeoutException('Query test timed out');
+          },
+        );
+
+        final endTime = DateTime.now();
+        final duration = endTime.difference(startTime);
+
+        _connectionPool.returnConnection(connection);
+
+        // Get pool metrics for diagnostics
+        final metrics = _connectionPool.getMetrics();
+
+        print('✅ Database connection test successful');
+        print('📊 Response time: ${duration.inMilliseconds}ms');
+        print('📊 Pool metrics: $metrics');
+
+        return {
+          'success': true,
+          'message': 'Database connection and query test successful',
+          'response_time_ms': duration.inMilliseconds,
+          'query_test_passed': results.isNotEmpty,
+          'pool_metrics': metrics,
+        };
+      } catch (e) {
+        print('❌ Database test failed on attempt $attempt: $e');
+
+        // If this is the last attempt, return detailed error
+        if (attempt == maxRetries) {
+          final metrics = _connectionPool.getMetrics();
+          final errorMessage = _getDetailedErrorMessage(e);
+
+          return {
+            'success': false,
+            'message': errorMessage,
+            'error_details': e.toString(),
+            'pool_metrics': metrics,
+          };
+        }
+
+        // Calculate delay with exponential backoff
+        final delay = Duration(seconds: baseDelay.inSeconds * attempt);
+        print('⏳ Waiting ${delay.inSeconds} seconds before retry...');
+        await Future.delayed(delay);
+      }
+    }
+
+    // This should never be reached, but just in case
+    return {
+      'success': false,
+      'message': 'Database connection test failed after $maxRetries attempts',
+      'pool_metrics': _connectionPool.getMetrics(),
+    };
+  }
+
+  /// Get detailed error message based on exception type
+  String _getDetailedErrorMessage(dynamic e) {
+    final error = e.toString().toLowerCase();
+
+    if (error.contains('timeout')) {
+      return 'Database connection timed out. The server might be overloaded or your network connection is slow.';
+    } else if (error.contains('refused')) {
+      return 'Database connection refused. The server might be down or blocking your connection.';
+    } else if (error.contains('access denied') ||
+        error.contains('authentication')) {
+      return 'Database authentication failed. Please verify your credentials.';
+    } else if (error.contains('circuit breaker')) {
+      return 'Too many failed connection attempts. Please wait a few minutes and try again.';
+    } else if (error.contains('network')) {
+      return 'Network error. Please check your internet connection.';
+    } else {
+      return 'Database connection failed. Please try again or contact support if the issue persists.';
     }
   }
 
@@ -176,11 +275,9 @@ class DatabaseService {
   Future<Map<String, dynamic>> getStats() async {
     try {
       final poolMetrics = _connectionPool.getMetrics();
-      final queryMetrics = _queryExecutor.getMetrics();
 
       return {
         ...poolMetrics,
-        ...queryMetrics,
         'is_healthy': await isHealthy(),
         'connection_timeout_seconds': 30,
         'max_wait_time_seconds': 25,
@@ -209,12 +306,29 @@ class DatabaseService {
 
   /// Check if table exists
   Future<bool> tableExists(String tableName) async {
-    return _queryExecutor.tableExists(tableName);
+    try {
+      final results = await _queryExecutor.execute(
+        "SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?",
+        [tableName],
+      );
+      return results.isNotEmpty && results.first['count'] > 0;
+    } catch (e) {
+      return false;
+    }
   }
 
   /// Get table row count
   Future<int> getTableRowCount(String tableName, [String? whereClause]) async {
-    return _queryExecutor.getTableRowCount(tableName, whereClause);
+    try {
+      final sql = whereClause != null && whereClause.isNotEmpty
+          ? "SELECT COUNT(*) as count FROM $tableName WHERE $whereClause"
+          : "SELECT COUNT(*) as count FROM $tableName";
+
+      final results = await _queryExecutor.execute(sql);
+      return results.isNotEmpty ? results.first['count'] : 0;
+    } catch (e) {
+      return 0;
+    }
   }
 
   // Auth convenience methods

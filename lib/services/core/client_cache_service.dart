@@ -1,4 +1,4 @@
-import 'package:woosh/models/client_model.dart';
+import 'package:woosh/models/client/client_model.dart';
 import 'package:woosh/services/core/client_service.dart';
 import 'package:woosh/services/database/auth_service.dart';
 

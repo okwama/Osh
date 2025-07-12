@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:woosh/models/hive/client_model.dart';
-import 'package:woosh/models/outlet_model.dart';
-import 'package:woosh/services/core/client_cache_service.dart';
-import 'package:woosh/services/core/client_search_service.dart';
+import 'package:woosh/services/core/client_storage_service.dart';
+import 'package:woosh/services/search/index.dart';
 import 'package:woosh/services/database/pagination_service.dart';
 import 'package:woosh/services/database_service.dart';
 import 'package:woosh/pages/order/addorder_page.dart';
@@ -12,13 +11,13 @@ import 'package:woosh/pages/client/clientdetails.dart';
 import 'package:woosh/utils/app_theme.dart';
 import 'package:woosh/widgets/gradient_app_bar.dart';
 import 'package:woosh/widgets/skeleton_loader.dart';
-import 'package:woosh/models/client_model.dart';
+import 'package:woosh/models/client/client_model.dart';
 import 'package:woosh/pages/pos/upliftSaleCart_page.dart';
 import 'package:woosh/pages/journeyplan/reports/pages/product_return_page.dart';
-import 'package:woosh/widgets/client_search_indicator.dart';
-import 'package:woosh/widgets/client_empty_state.dart';
-import 'package:woosh/widgets/client_filter_panel.dart';
-import 'package:woosh/widgets/client_list_item.dart';
+import 'package:woosh/widgets/client/client_search_indicator.dart';
+import 'package:woosh/widgets/client/client_empty_state.dart';
+import 'package:woosh/widgets/client/client_filter_panel.dart';
+import 'package:woosh/widgets/client/client_list_item.dart';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:async';
@@ -46,13 +45,14 @@ class _ViewClientPageState extends State<ViewClientPage> {
   bool _isLoadingMore = false;
   bool _isSearching = false;
   bool _isOnline = true;
-  List<Outlet> _outlets = [];
+  List<Client> _outlets = [];
   String? _errorMessage;
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   int _currentPage = 1;
   bool _hasMore = true;
-  static const int _pageSize = 100;
+  static const int _pageSize =
+      10000; // Increased to 10,000 for better performance
   static const int _prefetchThreshold = 200;
   Timer? _debounce;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
@@ -65,18 +65,18 @@ class _ViewClientPageState extends State<ViewClientPage> {
   DateFilter _dateFilter = DateFilter.all;
 
   // Service instances
-  late final ClientCacheService _clientCacheService;
+  late final ClientStorageService _clientStorageService;
   late final PaginationService _paginationService;
   late final DatabaseService _db;
-  late final ClientSearchService _searchService;
+  late final UnifiedSearchService _searchService;
 
   @override
   void initState() {
     super.initState();
-    _clientCacheService = ClientCacheService.instance;
+    _clientStorageService = ClientStorageService.instance;
     _paginationService = PaginationService.instance;
     _db = DatabaseService.instance;
-    _searchService = ClientSearchService();
+    _searchService = UnifiedSearchService.instance;
     _initConnectivity();
     _loadOutlets();
     _scrollController.addListener(_onScroll);
@@ -138,19 +138,18 @@ class _ViewClientPageState extends State<ViewClientPage> {
       if (mounted) {
         try {
           if (query.isNotEmpty) {
-
             // Always perform search regardless of hasMore status
-            final updatedOutlets = await _searchService.searchClients(
+            final searchResult = await _searchService.searchClients(
               query: query,
-              currentPage: _currentPage,
-              pageSize: _pageSize,
-              existingOutlets: _outlets,
-              hasMore: _hasMore,
+              page: _currentPage,
+              limit: _pageSize,
+              useCache: true,
             );
 
             if (mounted) {
               setState(() {
-                _outlets = updatedOutlets;
+                _outlets = searchResult.items;
+                _hasMore = searchResult.hasMore;
               });
 
               // Add a small delay to prevent flickering
@@ -193,7 +192,7 @@ class _ViewClientPageState extends State<ViewClientPage> {
 
   Future<void> _loadOutlets() async {
     if (!_isOnline) {
-      _loadFromCache();
+      await _loadFromCache();
       return;
     }
 
@@ -205,75 +204,76 @@ class _ViewClientPageState extends State<ViewClientPage> {
     });
 
     try {
-      // Get current user's country ID for filtering
-      final currentUser = await _db.getCurrentUserDetails();
-      final countryId = currentUser['countryId'];
+      // Initialize storage service if needed
+      await _clientStorageService.init();
 
-
-      // First load from cache for quick display
+      // First load from storage for quick display
       await _loadFromCache();
 
-      // Then fetch from pagination service with country filter
+      // Check if sync is needed
+      final isSyncNeeded = await _clientStorageService.isSyncNeeded();
 
-      final result = await _paginationService.fetchOffset(
-        table: 'Clients',
-        page: 1,
-        limit: _pageSize,
-        filters: {
-          'countryId': countryId, // Filter by country at database level
-        },
-        additionalWhere:
-            'countryId IS NOT NULL AND countryId > 0', // Exclude null/0 countryId
-        orderBy: 'id',
-        orderDirection: 'DESC',
-        columns: [
-          'id',
-          'name',
-          'address',
-          'contact',
-          'latitude',
-          'longitude',
-          'email',
-          'region_id',
-          'region',
-          'countryId',
-        ],
-      );
+      if (isSyncNeeded) {
+        print('🔄 Syncing clients with storage service...');
 
-      final outlets = result.items
-          .map((row) => Outlet(
-                id: row['id'] as int,
-                name: row['name'] as String,
-                address: row['address'] as String? ?? '',
-                latitude: row['latitude'] as double?,
-                longitude: row['longitude'] as double?,
-                email: row['email'] as String? ?? '',
-                contact: row['contact'] as String? ?? '',
-                regionId: row['region_id'] as int?,
-                region: row['region'] as String? ?? '',
-                countryId: row['countryId'] as int?,
-              ))
-          .toList();
+        try {
+          // Perform smart sync (incremental or full based on data)
+          final syncedClients = await _clientStorageService.syncClients();
 
-      // Debug: Print all countryIds fetched
-      if (kDebugMode) {
-        print(
-            '🔎 [DEBUG] Fetched client countryIds: ${outlets.map((o) => o.countryId.toString()).join(', ')}');
+          if (mounted) {
+            setState(() {
+              _outlets = syncedClients;
+              _isLoading = false;
+              _hasMore = syncedClients.length >= _pageSize;
+            });
+          }
+        } catch (e) {
+          print('⚠️ Sync failed, using stored data: $e');
+
+          // Use stored data as fallback
+          final storedClients =
+              await _clientStorageService.getAllStoredClients();
+
+          if (mounted) {
+            setState(() {
+              _outlets = storedClients;
+              _isLoading = false;
+              _hasMore = storedClients.length >= _pageSize;
+            });
+          }
+        }
+      } else {
+        // Use stored data if sync not needed
+        final storedClients = await _clientStorageService.getAllStoredClients();
+
+        if (mounted) {
+          setState(() {
+            _outlets = storedClients;
+            _isLoading = false;
+            _hasMore = storedClients.length >= _pageSize;
+          });
+        }
       }
 
+      // Debug: Print storage stats
+      if (kDebugMode) {
+        final stats = await _clientStorageService.getStorageStats();
+        final totalCount = await _clientStorageService.getTotalClientCount();
+        print('📊 Storage stats: $stats');
+        print('📊 Total clients available: $totalCount');
 
-      if (mounted) {
-        setState(() {
-          _outlets = outlets;
-          _isLoading = false;
-          _hasMore = result.hasMore;
-        });
+        // Update hasMore based on total count
+        if (mounted) {
+          setState(() {
+            _hasMore = _outlets.length < totalCount;
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _errorMessage =
-              'Failed to load clients. ${_outlets.isEmpty ? 'No cached data available.' : 'Showing cached data.'}';
+              'Failed to load clients. ${_outlets.isEmpty ? 'No stored data available.' : 'Showing stored data.'}';
           _isLoading = false;
         });
 
@@ -292,28 +292,12 @@ class _ViewClientPageState extends State<ViewClientPage> {
   }
 
   Future<void> _loadFromCache() async {
-    // Try to get cached clients first
-    final cachedClients = await _clientCacheService.getCachedClients();
-    if (cachedClients != null) {
-      final outlets = cachedClients
-          .map((client) => Outlet(
-                id: client.id,
-                name: client.name,
-                address: client.address,
-                latitude: client.latitude,
-                longitude: client.longitude,
-                email: client.email ?? '',
-                contact: client.contact,
-                regionId: client.regionId,
-                region: client.region,
-                countryId: client.countryId,
-              ))
-          .toList();
-
+    // Try to get stored clients first
+    final storedClients = await _clientStorageService.getAllStoredClients();
+    if (storedClients.isNotEmpty) {
       setState(() {
-        _outlets = outlets;
+        _outlets = storedClients;
       });
-    } else {
     }
   }
 
@@ -325,78 +309,34 @@ class _ViewClientPageState extends State<ViewClientPage> {
     });
 
     try {
-      // Get current user's country ID for filtering
-      final currentUser = await _db.getCurrentUserDetails();
-      final countryId = currentUser['countryId'];
+      print('📍 Loading more clients from storage service...');
 
-      print(
-          '📍 Loading more clients for country ID: $countryId - page ${_currentPage + 1}');
-
-      // Use pagination service for additional pages with country filter
-      final result = await _paginationService.fetchOffset(
-        table: 'Clients',
+      // Load more clients using the storage service
+      final moreClients = await _clientStorageService.loadMoreClients(
         page: _currentPage + 1,
         limit: _pageSize,
-        filters: {
-          'countryId': countryId, // Filter by country at database level
-        },
-        additionalWhere:
-            'countryId IS NOT NULL AND countryId > 0', // Exclude null/0 countryId
-        orderBy: 'id',
-        orderDirection: 'DESC',
-        columns: [
-          'id',
-          'name',
-          'address',
-          'contact',
-          'latitude',
-          'longitude',
-          'email',
-          'region_id',
-          'region',
-          'countryId',
-        ],
+        appendToExisting: true,
       );
-
-      final newOutlets = result.items
-          .map((row) => Outlet(
-                id: row['id'] as int,
-                name: row['name'] as String,
-                address: row['address'] as String? ?? '',
-                latitude: row['latitude'] as double?,
-                longitude: row['longitude'] as double?,
-                email: row['email'] as String? ?? '',
-                contact: row['contact'] as String? ?? '',
-                regionId: row['region_id'] as int?,
-                region: row['region'] as String? ?? '',
-                countryId: row['countryId'] as int?,
-              ))
-          .toList();
-
-      // Debug: Print all countryIds fetched in load more
-      print(
-          '🔎 [DEBUG] (Load More) Fetched client countryIds: ${newOutlets.map((o) => o.countryId.toString()).join(', ')}');
-
-      print(
-          '? Fetched ${newOutlets.length} more clients for country $countryId');
 
       if (mounted) {
         setState(() {
-          _outlets.addAll(newOutlets);
+          _outlets = moreClients;
           _currentPage++;
           _isLoadingMore = false;
-          _hasMore = result.hasMore;
+          _hasMore = moreClients.length >= _pageSize; // Check if more available
         });
       }
+
+      print('✅ Loaded ${moreClients.length} more clients');
     } catch (e) {
       if (mounted) {
         setState(() {
           _isLoadingMore = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to load more clients'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text('Failed to load more clients: ${e.toString()}'),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -428,16 +368,37 @@ class _ViewClientPageState extends State<ViewClientPage> {
     );
   }
 
-  List<Outlet> get _filteredOutlets {
+  List<Client> get _filteredOutlets {
     final query = _searchController.text.toLowerCase().trim();
 
-    // Use the search service to filter outlets
-    List<Outlet> filtered = _searchService.filterOutlets(
-      outlets: _outlets,
-      query: query,
-      showOnlyWithContact: _showOnlyWithContact,
-      showOnlyWithEmail: _showOnlyWithEmail,
-    );
+    // Filter outlets based on search query and filters
+    List<Client> filtered = _outlets.where((client) {
+      // Fuzzy search query filter
+      if (query.isNotEmpty) {
+        final searchTerms =
+            query.split(' ').where((term) => term.isNotEmpty).toList();
+
+        // Check if all search terms match any field (fuzzy search)
+        bool matchesQuery = searchTerms.every((term) {
+          return client.name.toLowerCase().contains(term) ||
+              (client.address?.toLowerCase().contains(term) ?? false) ||
+              (client.contact?.toLowerCase().contains(term) ?? false) ||
+              (client.email?.toLowerCase().contains(term) ?? false) ||
+              (client.region?.toLowerCase().contains(term) ?? false);
+        });
+
+        if (!matchesQuery) return false;
+      }
+
+      // Contact filter
+      if (_showOnlyWithContact && (client.contact?.isEmpty ?? true))
+        return false;
+
+      // Email filter
+      if (_showOnlyWithEmail && (client.email?.isEmpty ?? true)) return false;
+
+      return true;
+    }).toList();
 
     // Apply date filter
     if (_dateFilter != DateFilter.all) {
@@ -482,25 +443,25 @@ class _ViewClientPageState extends State<ViewClientPage> {
     return filtered;
   }
 
-  void _onClientSelected(Outlet outlet) {
+  void _onClientSelected(Client client) {
     if (widget.forOrderCreation) {
       Get.to(
-        () => AddOrderPage(outlet: outlet),
+        () => AddOrderPage(outlet: client),
         transition: Transition.rightToLeft,
       );
     } else if (widget.forUpliftSale) {
       Get.off(
-        () => UpliftSaleCartPage(outlet: outlet),
+        () => UpliftSaleCartPage(outlet: client),
         transition: Transition.rightToLeft,
       );
     } else if (widget.forProductReturn) {
       Get.to(
-        () => ProductReturnPage(outlet: outlet),
+        () => ProductReturnPage(client: client),
         transition: Transition.rightToLeft,
       );
     } else {
       Get.to(
-        () => ClientDetailsPage(outlet: outlet),
+        () => ClientDetailsPage(client: client),
         transition: Transition.rightToLeft,
       );
     }
@@ -715,10 +676,10 @@ class _ViewClientPageState extends State<ViewClientPage> {
                                       return _buildListFooter();
                                     }
 
-                                    final outlet = _filteredOutlets[index];
+                                    final client = _filteredOutlets[index];
                                     return ClientListItem(
-                                      outlet: outlet,
-                                      onTap: () => _onClientSelected(outlet),
+                                      client: client,
+                                      onTap: () => _onClientSelected(client),
                                     );
                                   },
                                 ),

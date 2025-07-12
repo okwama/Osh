@@ -1,5 +1,5 @@
 import 'package:woosh/services/core/client_service.dart';
-import 'package:woosh/models/client_model.dart';
+import 'package:woosh/models/client/client_model.dart';
 
 /// Example usage of the ClientService
 /// This file demonstrates how to use the new client service with direct database connections

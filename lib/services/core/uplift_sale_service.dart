@@ -1,7 +1,7 @@
 import 'package:woosh/services/database_service.dart';
 import 'package:woosh/models/uplift_sale_model.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:woosh/models/client_model.dart';
+import 'package:woosh/models/client/client_model.dart';
 import 'package:woosh/models/salerep/sales_rep_model.dart';
 import 'package:woosh/models/Products_Inventory/product_model.dart';
 

@@ -501,8 +501,12 @@ class SessionService {
         // Clear all caches since session states changed
         _sessionCache.clear();
         _lastCheckTime.clear();
-      } else {}
-    } catch (e) {}
+      } else {
+        print('🔧 No inconsistent sessions found to fix');
+      }
+    } catch (e) {
+      print('❌ Error fixing inconsistent sessions: $e');
+    }
   }
 
   /// Auto-end all active sessions at 6:10 PM
@@ -530,8 +534,13 @@ class SessionService {
         // Clear all caches since session states changed
         _sessionCache.clear();
         _lastCheckTime.clear();
-      } else {}
-    } catch (e) {}
+        print('⏰ Auto-ended $affectedRows active sessions');
+      } else {
+        print('⏰ No active sessions to auto-end');
+      }
+    } catch (e) {
+      print('❌ Error auto-ending sessions: $e');
+    }
   }
 
   /// Get session statistics

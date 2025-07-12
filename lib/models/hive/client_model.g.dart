@@ -25,13 +25,14 @@ class ClientModelAdapter extends TypeAdapter<ClientModel> {
       latitude: fields[5] as double,
       longitude: fields[6] as double,
       status: fields[7] as String,
+      countryId: fields[8] as int,
     );
   }
 
   @override
   void write(BinaryWriter writer, ClientModel obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -47,7 +48,9 @@ class ClientModelAdapter extends TypeAdapter<ClientModel> {
       ..writeByte(6)
       ..write(obj.longitude)
       ..writeByte(7)
-      ..write(obj.status);
+      ..write(obj.status)
+      ..writeByte(8)
+      ..write(obj.countryId);
   }
 
   @override

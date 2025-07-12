@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:woosh/models/journeyplan/journeyplan_model.dart';
-import 'package:woosh/models/client_model.dart';
+import 'package:woosh/models/client/client_model.dart';
 import 'package:woosh/services/database_service.dart';
 
 /// Journey plan service using direct database connections

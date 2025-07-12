@@ -1,4 +1,4 @@
-import 'package:woosh/models/client_model.dart';
+import 'package:woosh/models/client/client_model.dart';
 import 'package:flutter/material.dart';
 
 class JourneyPlan {
@@ -171,7 +171,7 @@ class JourneyPlan {
           // Handle decimal strings by converting to double first, then to int
           if (value.contains('.')) {
             final doubleValue = double.tryParse(value);
-            return doubleValue?.toInt();
+            return doubleValue!.toInt();
           }
           return int.parse(value);
         } catch (e) {
@@ -213,7 +213,7 @@ class JourneyPlan {
     // Check for both userId and salesRepId (server might use userId)
     final salesRepId = parseInt(json['userId'] ?? json['salesRepId']);
     final routeId = parseInt(json['routeId']);
-    final clientId = parseInt(json['clientId']); // Add clientId parsing
+
     final latitude = parseDouble(json['latitude']);
     final longitude = parseDouble(json['longitude']);
     final checkoutLatitude = parseDouble(json['checkoutLatitude']);

@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
-import 'package:woosh/models/client_model.dart';
+import 'package:woosh/models/client/client_model.dart';
 import 'package:woosh/models/journeyplan/journeyplan_model.dart';
 
-import 'package:woosh/services/core/journey_plan_service.dart';
+import 'package:woosh/services/core/journeyplan/journey_plan_service.dart';
 import 'package:woosh/services/core/route_service.dart' as RouteServices;
 import 'package:woosh/services/database_service.dart';
 import 'package:woosh/services/database/pagination_service.dart';
@@ -169,8 +169,7 @@ class _CreateJourneyPlanPageState extends State<CreateJourneyPlanPage> {
             selectedRouteId = routeId;
           });
         }
-      } catch (fallbackError) {
-      }
+      } catch (fallbackError) {}
     } finally {
       if (mounted) {
         setState(() {
@@ -192,12 +191,11 @@ class _CreateJourneyPlanPageState extends State<CreateJourneyPlanPage> {
       final currentUser = await _db.getCurrentUserDetails();
       final countryId = currentUser['countryId'];
 
-
       // Use the SAME working method as viewclient_page.dart
       final result = await _paginationService.fetchOffset(
         table: 'Clients',
         page: 1,
-        limit: 100,
+        limit: 10000, // Increased from 100 to 10000 for better data loading
         filters: {
           'countryId': countryId, // Direct database filtering
         },
@@ -205,6 +203,7 @@ class _CreateJourneyPlanPageState extends State<CreateJourneyPlanPage> {
             'countryId IS NOT NULL AND countryId > 0', // Exclude null/0 countryId
         orderBy: 'id',
         orderDirection: 'DESC',
+        whereParams: [], // Add empty whereParams array
         columns: [
           'id',
           'name',
@@ -234,7 +233,6 @@ class _CreateJourneyPlanPageState extends State<CreateJourneyPlanPage> {
                 countryId: row['countryId'] as int? ?? 0,
               ))
           .toList();
-
 
       if (mounted) {
         setState(() {
@@ -295,7 +293,7 @@ class _CreateJourneyPlanPageState extends State<CreateJourneyPlanPage> {
       final result = await _paginationService.fetchOffset(
         table: 'Clients',
         page: _currentPage + 1,
-        limit: 100,
+        limit: 10000, // Increased from 100 to 10000 for better data loading
         filters: {
           'countryId': countryId, // Direct database filtering
         },
@@ -303,6 +301,7 @@ class _CreateJourneyPlanPageState extends State<CreateJourneyPlanPage> {
             'countryId IS NOT NULL AND countryId > 0', // Exclude null/0 countryId
         orderBy: 'id',
         orderDirection: 'DESC',
+        whereParams: [], // Add empty whereParams array
         columns: [
           'id',
           'name',
@@ -383,7 +382,7 @@ class _CreateJourneyPlanPageState extends State<CreateJourneyPlanPage> {
       final result = await _paginationService.fetchOffset(
         table: 'Clients',
         page: 1,
-        limit: 100,
+        limit: 10000, // Increased from 100 to 10000 for better data loading
         filters: {
           'countryId': countryId, // Direct database filtering
         },
@@ -391,6 +390,7 @@ class _CreateJourneyPlanPageState extends State<CreateJourneyPlanPage> {
             'countryId IS NOT NULL AND countryId > 0', // Exclude null/0 countryId
         orderBy: 'id',
         orderDirection: 'DESC',
+        whereParams: [], // Add empty whereParams array
         columns: [
           'id',
           'name',
@@ -420,7 +420,6 @@ class _CreateJourneyPlanPageState extends State<CreateJourneyPlanPage> {
                 countryId: row['countryId'] as int? ?? 0,
               ))
           .toList();
-
 
       setState(() {
         _allClients = clients;

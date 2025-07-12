@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:woosh/models/outlet_model.dart';
+import 'package:woosh/models/client/client_model.dart';
 import 'package:woosh/models/Products_Inventory/product_model.dart';
 import 'package:woosh/models/hive/order_model.dart';
 import 'package:woosh/models/Products_Inventory/price_option_model.dart';
@@ -15,7 +15,7 @@ import 'package:woosh/services/core/currency_config_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class ProductDetailPage extends StatefulWidget {
-  final Outlet outlet;
+  final Client outlet;
   final ProductModel product;
   final OrderModel? order;
 
@@ -103,8 +103,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       if (mounted) {
         setState(() {});
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   void _calculateStockAvailability() {
@@ -740,7 +739,7 @@ class _QuantitySelector extends StatelessWidget {
 
 class _CartIconButton extends StatelessWidget {
   final CartController cartController;
-  final Outlet outlet;
+  final Client outlet;
   final OrderModel? order;
 
   const _CartIconButton({

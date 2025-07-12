@@ -24,14 +24,33 @@ class AuthController extends GetxController {
 
   Future<void> _initialize() async {
     try {
-      // Initialize database connection
-      await DatabaseService.instance.initialize();
+      // Check for existing session first (non-blocking)
+      await _loadUserFromStorage().timeout(
+        const Duration(seconds: 3),
+        onTimeout: () {
+          print('⏰ Auth initialization timeout, proceeding anyway');
+        },
+      );
+      _isInitialized.value = true;
 
-      // Check for existing session
-      await _loadUserFromStorage();
-      _isInitialized.value = true;
+      // Initialize database connection in background
+      _initializeDatabase();
     } catch (e) {
+      print('⚠️ Auth initialization error: $e');
       _isInitialized.value = true;
+    }
+  }
+
+  Future<void> _initializeDatabase() async {
+    try {
+      if (!DatabaseService.instance.isInitialized) {
+        print('🔄 Starting database initialization...');
+        await DatabaseService.instance.initialize();
+        print('✅ Database initialized successfully');
+      }
+    } catch (e) {
+      print('❌ Database initialization failed: $e');
+      // Don't rethrow - let individual operations handle DB errors
     }
   }
 
@@ -65,6 +84,11 @@ class AuthController extends GetxController {
 
   Future<void> login(String phoneNumber, String password) async {
     try {
+      // Ensure database is initialized before login
+      if (!DatabaseService.instance.isInitialized) {
+        print('🔄 Initializing database before login...');
+        await _initializeDatabase();
+      }
 
       final result = await AuthService.login(phoneNumber, password);
 
@@ -86,7 +110,6 @@ class AuthController extends GetxController {
         _currentUser.value = user;
         _currentToken.value = token;
         _isLoggedIn.value = true;
-
       } else {
         throw Exception(result['message'] ?? 'Login failed');
       }
@@ -110,7 +133,6 @@ class AuthController extends GetxController {
       _currentUser.value = null;
       _currentToken.value = null;
       _isLoggedIn.value = false;
-
     } catch (e) {
       rethrow;
     }

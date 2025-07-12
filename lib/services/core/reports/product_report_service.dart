@@ -1,6 +1,6 @@
 import 'package:woosh/models/journeyplan/report/report_model.dart';
 import 'package:woosh/models/journeyplan/report/productReport_model.dart';
-import 'package:woosh/models/client_model.dart';
+import 'package:woosh/models/client/client_model.dart';
 import 'package:woosh/services/database_service.dart';
 import 'package:woosh/services/core/foreign_key_validation_service.dart';
 import 'report_service.dart';

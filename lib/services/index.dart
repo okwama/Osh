@@ -5,7 +5,7 @@
 export 'core/index.dart';
 
 // Search service
-export 'core/search_service.dart';
+export 'search/index.dart';
 
 // Base services
 export 'database_service.dart';

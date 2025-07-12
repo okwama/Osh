@@ -29,6 +29,9 @@ class ClientModel extends HiveObject {
   @HiveField(7)
   final String status;
 
+  @HiveField(8)
+  final int countryId;
+
   ClientModel({
     required this.id,
     required this.name,
@@ -38,6 +41,7 @@ class ClientModel extends HiveObject {
     required this.latitude,
     required this.longitude,
     required this.status,
+    required this.countryId,
   });
 
   factory ClientModel.fromJson(Map<String, dynamic> json) {
@@ -53,6 +57,7 @@ class ClientModel extends HiveObject {
           ? (json['longitude'] as num).toDouble()
           : 0.0,
       status: json['status'],
+      countryId: json['countryId'] ?? 0,
     );
   }
 
@@ -66,6 +71,7 @@ class ClientModel extends HiveObject {
       'latitude': latitude,
       'longitude': longitude,
       'status': status,
+      'countryId': countryId,
     };
   }
 }

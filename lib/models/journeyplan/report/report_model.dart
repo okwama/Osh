@@ -7,7 +7,7 @@ import 'package:woosh/models/journeyplan/report/visibilityReport_model.dart';
 import 'package:woosh/models/journeyplan/report/productReturn_model.dart';
 import 'package:woosh/models/journeyplan/report/productSample_model.dart';
 import 'package:woosh/models/salerep/sales_rep_model.dart';
-import 'package:woosh/models/client_model.dart';
+import 'package:woosh/models/client/client_model.dart';
 
 enum ReportType {
   PRODUCT_AVAILABILITY,

@@ -1,5 +1,5 @@
 import 'package:get/get.dart';
-import 'package:woosh/models/client_model.dart';
+import 'package:woosh/models/client/client_model.dart';
 import 'package:woosh/services/core/client_repository.dart';
 
 class ClientController extends GetxController {

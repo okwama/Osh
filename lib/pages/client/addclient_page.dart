@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:woosh/services/core/client_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:woosh/models/client_model.dart';
+import 'package:woosh/models/client/client_model.dart';
 import 'package:get/get.dart';
 import 'package:woosh/utils/country_tax_labels.dart';
 

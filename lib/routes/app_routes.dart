@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:woosh/pages/journeyplan/feedback_report_page.dart';
 import 'package:woosh/pages/journeyplan/reports/product_availability_page.dart';
 import 'package:woosh/pages/journeyplan/reports/visibility_activity_page.dart';
+import 'package:woosh/pages/journeyplan/journeyplans_page.dart';
 import 'package:woosh/pages/order/viewOrder/vieworder_page.dart';
 import 'package:woosh/pages/pos/upliftSaleCart_page.dart';
 import 'package:woosh/controllers/uplift_cart_controller.dart';
@@ -12,6 +13,12 @@ import 'package:woosh/pages/test/database_test_page.dart';
 
 class AppRoutes {
   static final routes = [
+    // Journey Plans Route
+    GetPage(
+      name: '/journeyplans',
+      page: () => const JourneyPlansPage(),
+      transition: Transition.rightToLeft,
+    ),
     // Report Routes
     GetPage(
       name: '/journey/reports/feedback',

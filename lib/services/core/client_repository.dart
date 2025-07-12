@@ -1,6 +1,6 @@
-import 'package:woosh/models/client_model.dart';
+import 'package:woosh/models/client/client_model.dart';
 import 'package:woosh/services/database/pagination_service.dart';
-import 'package:woosh/services/database/query_executor.dart';
+import 'package:woosh/services/database/unified_database_service.dart';
 import 'package:woosh/services/database/auth_service.dart';
 
 /// Repository pattern implementation for Client data access
@@ -12,7 +12,7 @@ class ClientRepository {
   ClientRepository._();
 
   final PaginationService _paginationService = PaginationService.instance;
-  final QueryExecutor _queryExecutor = QueryExecutor.instance;
+  final UnifiedDatabaseService _queryExecutor = UnifiedDatabaseService.instance;
 
   /// Get paginated clients with proper abstraction
   Future<PaginatedResult<Client>> getClients({
@@ -52,6 +52,7 @@ class ClientRepository {
         filters: filters,
         orderBy: orderBy,
         orderDirection: orderDirection,
+        whereParams: [], // Add empty whereParams array
         columns: [
           'id',
           'name',

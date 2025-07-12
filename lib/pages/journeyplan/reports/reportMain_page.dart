@@ -7,7 +7,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:woosh/models/journeyplan/journeyplan_model.dart';
 import 'package:woosh/models/Products_Inventory/product_model.dart';
 import 'package:woosh/models/journeyplan/report/report_model.dart';
-import 'package:woosh/services/core/journey_plan_service.dart';
+import 'package:woosh/services/core/journeyplan/journey_plan_service.dart';
 import 'package:woosh/services/core/reports/index.dart';
 import 'package:woosh/services/core/product_service.dart';
 import 'package:woosh/models/journeyplan/report/productReport_model.dart';
@@ -20,6 +20,7 @@ import 'package:woosh/pages/journeyplan/reports/pages/visibility_report_page.dar
 import 'package:woosh/pages/journeyplan/reports/product_availability_page.dart';
 import 'package:woosh/pages/journeyplan/reports/base_report_page.dart';
 import 'package:woosh/utils/app_theme.dart';
+import 'package:woosh/utils/optimistic_ui_handler.dart';
 import 'package:woosh/widgets/gradient_app_bar.dart';
 import 'package:woosh/pages/journeyplan/reports/pages/product_return_page.dart';
 
@@ -438,9 +439,8 @@ class _ReportsOrdersPageState extends State<ReportsOrdersPage> {
                                     clientId: widget.journeyPlan.client.id,
                                   ));
                                 });
-                                if (_areAllReportsSubmitted()) {
-                                  widget.onAllReportsSubmitted?.call();
-                                }
+                                // Individual reports should not trigger navigation
+                                // Only checkout should navigate to journey plans page
                               },
                             ),
                             transition: Transition.rightToLeft,
@@ -478,9 +478,8 @@ class _ReportsOrdersPageState extends State<ReportsOrdersPage> {
                                     clientId: widget.journeyPlan.client.id,
                                   ));
                                 });
-                                if (_areAllReportsSubmitted()) {
-                                  widget.onAllReportsSubmitted?.call();
-                                }
+                                // Individual reports should not trigger navigation
+                                // Only checkout should navigate to journey plans page
                               },
                             ),
                             transition: Transition.rightToLeft,
@@ -518,9 +517,8 @@ class _ReportsOrdersPageState extends State<ReportsOrdersPage> {
                                     clientId: widget.journeyPlan.client.id,
                                   ));
                                 });
-                                if (_areAllReportsSubmitted()) {
-                                  widget.onAllReportsSubmitted?.call();
-                                }
+                                // Individual reports should not trigger navigation
+                                // Only checkout should navigate to journey plans page
                               },
                             ),
                             transition: Transition.rightToLeft,
@@ -710,39 +708,59 @@ class _ReportsOrdersPageState extends State<ReportsOrdersPage> {
   }
 
   Future<void> _processCheckout() async {
-    setState(() {
-      _isCheckingOut = true;
-    });
-
-    try {
-      // Get current position with timeout and fallback
-
-      Position? position;
-      try {
-        // Try to get current position with timeout
-        position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.medium, // Faster than high
-          timeLimit: const Duration(seconds: 10), // 10 second timeout
-        );
-        print(
-            'CHECKOUT: GPS position obtained: ${position.latitude}, ${position.longitude}');
-      } catch (gpsError) {
-        print(
-            'CHECKOUT: GPS timeout/error, trying last known position: $gpsError');
-
-        // Fallback to last known position
+    // Use optimistic UI - show success immediately and sync in background
+    OptimisticUIHandler.optimisticComplete(
+      successMessage: 'Checkout completed successfully',
+      onOptimisticSuccess: () {
+        // Call the callback immediately for navigation
+        widget.onAllReportsSubmitted?.call();
+        // Navigate back immediately
+        Get.back();
+      },
+      operation: () async {
+        Position? position;
         try {
-          position = await Geolocator.getLastKnownPosition();
-          if (position != null) {
+          // Try to get current position with timeout
+          position = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.medium,
+            timeLimit: const Duration(seconds: 10),
+          );
+          print(
+              'CHECKOUT: GPS position obtained: ${position.latitude}, ${position.longitude}');
+        } catch (gpsError) {
+          print(
+              'CHECKOUT: GPS timeout/error, trying last known position: $gpsError');
+
+          // Fallback to last known position
+          try {
+            position = await Geolocator.getLastKnownPosition();
+            if (position != null) {
+              print(
+                  'CHECKOUT: Using last known position: ${position.latitude}, ${position.longitude}');
+            } else {
+              // Use client coordinates as final fallback
+              position = Position(
+                latitude: widget.journeyPlan.client.latitude ?? 0.0,
+                longitude: widget.journeyPlan.client.longitude ?? 0.0,
+                timestamp: DateTime.now(),
+                accuracy: 1000.0,
+                altitude: 0.0,
+                heading: 0.0,
+                speed: 0.0,
+                speedAccuracy: 0.0,
+                altitudeAccuracy: 0.0,
+                headingAccuracy: 0.0,
+              );
+            }
+          } catch (fallbackError) {
             print(
-                'CHECKOUT: Using last known position: ${position.latitude}, ${position.longitude}');
-          } else {
+                'CHECKOUT: Fallback position failed, using client coordinates: $fallbackError');
             // Use client coordinates as final fallback
             position = Position(
               latitude: widget.journeyPlan.client.latitude ?? 0.0,
               longitude: widget.journeyPlan.client.longitude ?? 0.0,
               timestamp: DateTime.now(),
-              accuracy: 1000.0, // Low accuracy indicator
+              accuracy: 1000.0,
               altitude: 0.0,
               heading: 0.0,
               speed: 0.0,
@@ -751,68 +769,23 @@ class _ReportsOrdersPageState extends State<ReportsOrdersPage> {
               headingAccuracy: 0.0,
             );
           }
-        } catch (fallbackError) {
-          print(
-              'CHECKOUT: Fallback position failed, using client coordinates: $fallbackError');
-          // Use client coordinates as final fallback
-          position = Position(
-            latitude: widget.journeyPlan.client.latitude ?? 0.0,
-            longitude: widget.journeyPlan.client.longitude ?? 0.0,
-            timestamp: DateTime.now(),
-            accuracy: 1000.0, // Low accuracy indicator
-            altitude: 0.0,
-            heading: 0.0,
-            speed: 0.0,
-            speedAccuracy: 0.0,
-            altitudeAccuracy: 0.0,
-            headingAccuracy: 0.0,
-          );
         }
-      }
 
-      print(
-          'CHECKOUT: Final position: ${position.latitude}, ${position.longitude}');
+        print(
+            'CHECKOUT: Final position: ${position.latitude}, ${position.longitude}');
 
-      // Update journey plan with checkout information
-      final response = await JourneyPlanService.updateJourneyPlan(
-        journeyId: widget.journeyPlan.id!,
-        clientId: widget.journeyPlan.client.id,
-        status: JourneyPlan.statusCompleted,
-        checkoutTime: DateTime.now(),
-        checkoutLatitude: position.latitude,
-        checkoutLongitude: position.longitude,
-      );
-
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Checkout completed successfully'),
-            backgroundColor: Colors.green,
-          ),
+        // Update journey plan with checkout information
+        await JourneyPlanService.updateJourneyPlan(
+          journeyId: widget.journeyPlan.id!,
+          clientId: widget.journeyPlan.client.id,
+          status: JourneyPlan.statusCompleted,
+          checkoutTime: DateTime.now(),
+          checkoutLatitude: position.latitude,
+          checkoutLongitude: position.longitude,
         );
 
-        // Call the callback if provided
-        widget.onAllReportsSubmitted?.call();
-
-        // Navigate back after successful checkout
-        Get.back();
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error during checkout: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isCheckingOut = false;
-        });
-      }
-    }
+        print('✅ Checkout sync completed successfully');
+      },
+    );
   }
 }

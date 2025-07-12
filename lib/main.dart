@@ -22,6 +22,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:woosh/services/permission_service.dart';
+import 'package:woosh/services/core/client_storage_service.dart';
 
 /// Top-level function to calculate stock statistics for background processing
 Map<String, int> calculateStockStatistics(List<dynamic> products) {
@@ -56,35 +57,42 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    // ✅ CENTRALIZED DATABASE INITIALIZATION
-    await Get.putAsync(() async {
-      final db = DatabaseService.instance;
-      await db.initialize();
-      return db;
-    });
-
+    // 🚀 FAST STARTUP: Initialize only essential services
     await GetStorage.init();
-    // Initialize Hive with all adapters
     await HiveInitializer.initialize();
+
+    // 🚀 CRITICAL: Register controllers before app launch
+    Get.put(AuthController());
+    Get.put(UpliftCartController());
 
     // Initialize timezone for session management
     SessionService.initializeTimezone();
 
-    Get.put(AuthController());
-    Get.put(UpliftCartController());
+    // Request permissions (non-blocking)
+    PermissionService().requestPermissions();
 
-    // Request permissions before app starts
-    await PermissionService().requestPermissions();
-
-    // Initialize services in background to avoid blocking UI
-    _initializeServicesInBackground();
-
-    // Test stock service performance (remove in production)
-    // StockTest.testStockService();
-
+    // 🚀 LAUNCH APP IMMEDIATELY
     runApp(MyApp());
+
+    // 🚀 INITIALIZE HEAVY SERVICES IN BACKGROUND
+    _initializeServicesInBackground();
   } catch (e) {
+    print('⚠️ Startup error: $e');
+
+    // 🔧 EMERGENCY FIX: Clear corrupted Hive data if needed
+    if (e
+        .toString()
+        .contains('type \'Null\' is not a subtype of type \'int\'')) {
+      print('🔧 Emergency: Clearing corrupted Hive data...');
+      try {
+        await ClientStorageService.clearCorruptedData();
+      } catch (clearError) {
+        print('⚠️ Failed to clear corrupted data: $clearError');
+      }
+    }
+
     // Continue with app launch even if some services fail
+    runApp(MyApp());
   }
 }
 
@@ -93,13 +101,33 @@ void _initializeServicesInBackground() {
   // Use microtask to avoid blocking the main thread
   Future.microtask(() async {
     try {
-      // Initialize product stock cache
-      await _initializeProductStockCache();
+      // 🚀 DELAYED INITIALIZATION: Wait for app to be ready
+      await Future.delayed(const Duration(seconds: 2));
 
-      // Initialize fast stock service
-      await StockService.instance.initialize();
+      // Initialize database service (non-blocking)
+      Get.putAsync(() async {
+        try {
+          final db = DatabaseService.instance;
+          await db.initialize();
+          return db;
+        } catch (e) {
+          print('⚠️ Database initialization failed: $e');
+          // Return a mock service for offline mode
+          return DatabaseService.instance;
+        }
+      });
 
+      // Initialize product stock cache (non-blocking)
+      _initializeProductStockCache();
+
+      // Initialize fast stock service (non-blocking)
+      StockService.instance.initialize().catchError((e) {
+        print('⚠️ Stock service initialization failed: $e');
+      });
+
+      print('✅ Background services initialized successfully');
     } catch (e) {
+      print('⚠️ Background service initialization failed: $e');
     }
   });
 }
@@ -107,17 +135,14 @@ void _initializeServicesInBackground() {
 /// Initialize product stock cache on app startup
 Future<void> _initializeProductStockCache() async {
   try {
-
-    // Check if user is authenticated
+    // 🚀 FAST CHECK: Only proceed if user is authenticated
     if (!TokenService.isAuthenticated()) {
       return;
     }
 
-    // Check connectivity
+    // 🚀 FAST CHECK: Only proceed if connected
     final connectivityResult = await Connectivity().checkConnectivity();
-    final isConnected = connectivityResult != ConnectivityResult.none;
-
-    if (!isConnected) {
+    if (connectivityResult == ConnectivityResult.none) {
       return;
     }
 
@@ -126,21 +151,27 @@ Future<void> _initializeProductStockCache() async {
     await productHiveService.init();
     Get.put(productHiveService);
 
-    // Check if cache is fresh (less than 10 minutes old)
+    // 🚀 FAST CHECK: Use cached data if fresh (30 minutes instead of 10)
     final lastUpdate = await productHiveService.getLastUpdateTime();
     final isCacheFresh = lastUpdate != null &&
-        DateTime.now().difference(lastUpdate).inMinutes < 10;
+        DateTime.now().difference(lastUpdate).inMinutes < 30;
 
     if (isCacheFresh) {
+      print('✅ Using fresh product cache');
       return;
     }
 
-
-    // Fetch all products with stock data
+    // 🚀 OPTIMIZED FETCH: Reduced limit for faster loading
     final products = await ProductService.getProducts(
       page: 1,
-      limit: 1000, // Fetch more products for comprehensive cache
+      limit: 500, // Reduced from 1000 for faster loading
       search: null,
+    ).timeout(
+      const Duration(seconds: 10), // Reduced timeout
+      onTimeout: () {
+        print('⏰ Product cache timeout, using existing data');
+        return [];
+      },
     );
 
     if (products.isNotEmpty) {
@@ -148,28 +179,37 @@ Future<void> _initializeProductStockCache() async {
       await productHiveService.saveProducts(products);
       await productHiveService.setLastUpdateTime(DateTime.now());
 
-      print(
-          '✅ Successfully cached ${products.length} products with stock data');
+      print('✅ Successfully cached ${products.length} products');
 
       // Process stock statistics in background
       _processStockStatistics(products);
-    } else {
     }
   } catch (e) {
-    // Don't fail app startup if stock cache fails
+    print('⚠️ Product cache initialization failed: $e');
   }
 }
 
 /// Process stock statistics in background to avoid blocking UI
 void _processStockStatistics(List<dynamic> products) {
-  compute(calculateStockStatistics, products).then((stats) {
-  }).catchError((e) {
-  });
+  compute(calculateStockStatistics, products)
+      .then((stats) {})
+      .catchError((e) {});
+}
+
+/// Get the initial page based on authentication status
+Widget _getInitialPage(AuthController authController) {
+  // Check if user is authenticated using TokenService
+  final isAuthenticated = TokenService.isAuthenticated();
+
+  if (!isAuthenticated || !authController.isLoggedIn.value) {
+    return const LoginPage();
+  } else {
+    // All authenticated users go to HomePage
+    return HomePage();
+  }
 }
 
 class MyApp extends StatelessWidget {
-  final AuthController authController = Get.find<AuthController>();
-
   MyApp({super.key});
 
   @override
@@ -255,18 +295,31 @@ class MyApp extends StatelessWidget {
         ),
       ),
       home: Obx(() {
-        if (!authController.isInitialized.value) {
-          return const Scaffold(
-              body: Center(child: CircularProgressIndicator()));
-        }
-        // Check if user is authenticated using TokenService
-        final isAuthenticated = TokenService.isAuthenticated();
+        try {
+          final authController = Get.find<AuthController>();
 
-        if (!isAuthenticated || !authController.isLoggedIn.value) {
+          // Add timeout for initialization to prevent infinite loading
+          if (!authController.isInitialized.value) {
+            // Show loading for max 5 seconds, then proceed anyway
+            return FutureBuilder(
+              future: Future.delayed(const Duration(seconds: 5)),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+                } else {
+                  // Force proceed after timeout
+                  return _getInitialPage(authController);
+                }
+              },
+            );
+          }
+
+          return _getInitialPage(authController);
+        } catch (e) {
+          // If AuthController is not available, show login page
           return const LoginPage();
-        } else {
-          // All authenticated users go to HomePage
-          return HomePage();
         }
       }),
       getPages: [

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:woosh/models/outlet_model.dart';
+import 'package:woosh/models/client/client_model.dart';
 import 'package:woosh/models/hive/order_model.dart';
 import 'package:woosh/models/order/orderitem_model.dart';
 import 'package:woosh/controllers/cart_controller.dart';
@@ -21,7 +21,7 @@ import 'package:woosh/utils/app_theme.dart';
 import 'package:woosh/widgets/gradient_app_bar.dart';
 
 class CartPage extends StatefulWidget {
-  final Outlet outlet;
+  final Client outlet;
   final OrderModel? order;
 
   const CartPage({
@@ -66,8 +66,7 @@ class _CartPageState extends State<CartPage> with WidgetsBindingObserver {
       if (mounted) {
         setState(() {});
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   @override
@@ -111,8 +110,7 @@ class _CartPageState extends State<CartPage> with WidgetsBindingObserver {
         return;
       }
 
-      if (userRegionId != null) {
-      }
+      if (userRegionId != null) {}
 
       // Fetch stores from database
       var stores = await StoreService.getStoresForUser(countryId, userRegionId);
@@ -123,7 +121,6 @@ class _CartPageState extends State<CartPage> with WidgetsBindingObserver {
         print(
             '📋 [CartPage] Available stores: ${stores.map((s) => '${s.name} (${s.region?.name ?? 'No Region'})').join(', ')}');
       } else {
-
         // If no stores found for specific region, try to get all stores in the country
         if (userRegionId != null) {
           print(
@@ -936,12 +933,12 @@ class _CartPageState extends State<CartPage> with WidgetsBindingObserver {
                         size: 20,
                       ),
                       const SizedBox(width: 8),
-                  const Text(
-                    'Select Store',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                      const Text(
+                        'Select Store',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                     ],
                   ),
@@ -972,7 +969,7 @@ class _CartPageState extends State<CartPage> with WidgetsBindingObserver {
                         ),
                       );
                     }
-                    
+
                     return DropdownButtonFormField<Store>(
                       value: selectedStore.value,
                       decoration: InputDecoration(
@@ -996,66 +993,66 @@ class _CartPageState extends State<CartPage> with WidgetsBindingObserver {
                         fontSize: 14,
                         color: Colors.black87,
                       ),
-                    items: availableStores.map((store) {
-                      return DropdownMenuItem(
-                        value: store,
+                      items: availableStores.map((store) {
+                        return DropdownMenuItem(
+                          value: store,
                           child: Container(
                             constraints: const BoxConstraints(maxHeight: 50),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              store.name,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  store.name,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
                                     fontSize: 13,
-                              ),
+                                  ),
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 1,
-                            ),
-                            if (store.region != null) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                '${store.region!.name}${store.region!.country != null ? ', ${store.region!.country!.name}' : ''}',
-                                style: TextStyle(
+                                ),
+                                if (store.region != null) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${store.region!.name}${store.region!.country != null ? ', ${store.region!.country!.name}' : ''}',
+                                    style: TextStyle(
                                       fontSize: 10,
-                                  color: Colors.grey[600],
-                                ),
+                                      color: Colors.grey[600],
+                                    ),
                                     overflow: TextOverflow.ellipsis,
                                     maxLines: 1,
-                              ),
-                            ] else ...[
-                              const SizedBox(height: 2),
-                              Text(
+                                  ),
+                                ] else ...[
+                                  const SizedBox(height: 2),
+                                  Text(
                                     'No region Assigned',
-                                style: TextStyle(
+                                    style: TextStyle(
                                       fontSize: 6,
-                                  color: Colors.grey[400],
-                                  fontStyle: FontStyle.italic,
-                                ),
+                                      color: Colors.grey[400],
+                                      fontStyle: FontStyle.italic,
+                                    ),
                                     overflow: TextOverflow.ellipsis,
                                     maxLines: 1,
-                              ),
-                            ],
-                          ],
+                                  ),
+                                ],
+                              ],
                             ),
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (Store? newValue) {
-                      if (newValue != null) {
-                        selectedStore.value = newValue;
-                      }
-                    },
-                    validator: (value) {
-                      if (value == null) {
-                        return 'Please select a store';
-                      }
-                      return null;
-                    },
-                  );
-                }),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (Store? newValue) {
+                        if (newValue != null) {
+                          selectedStore.value = newValue;
+                        }
+                      },
+                      validator: (value) {
+                        if (value == null) {
+                          return 'Please select a store';
+                        }
+                        return null;
+                      },
+                    );
+                  }),
 
                   // Selected store info
                   Obx(() {
@@ -1108,9 +1105,9 @@ class _CartPageState extends State<CartPage> with WidgetsBindingObserver {
                     return const SizedBox.shrink();
                   }),
                 ],
-                ),
               ),
-              Expanded(
+            ),
+            Expanded(
               child: Stack(
                 children: [
                   cartController.items.isEmpty

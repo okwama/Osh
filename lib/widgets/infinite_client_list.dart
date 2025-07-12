@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:woosh/controllers/client_controller.dart';
-import 'package:woosh/models/client_model.dart';
-import 'package:woosh/models/outlet_model.dart';
-import 'package:woosh/widgets/client_list_item.dart';
+import 'package:woosh/models/client/client_model.dart';
+
+import 'package:woosh/widgets/client/client_list_item.dart';
 
 class InfiniteClientList extends StatelessWidget {
   final ClientController controller;
@@ -50,16 +50,7 @@ class InfiniteClientList extends StatelessWidget {
               return itemBuilder!(context, client);
             }
             return ClientListItem(
-              outlet: Outlet(
-                id: client.id,
-                name: client.name,
-                address: client.address,
-                contact: client.contact,
-                email: client.email,
-                regionId: client.regionId,
-                region: client.region,
-                countryId: client.countryId,
-              ),
+              client: client,
               onTap: onClientTap != null ? () => onClientTap!(client) : () {},
             );
           },

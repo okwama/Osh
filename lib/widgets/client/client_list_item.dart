@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:woosh/models/client_model.dart';
-import 'package:woosh/models/outlet_model.dart';
+import 'package:woosh/models/client/client_model.dart';
 
 class ClientListItem extends StatelessWidget {
-  final Outlet outlet;
+  final Client client;
   final VoidCallback onTap;
 
   const ClientListItem({
     super.key,
-    required this.outlet,
+    required this.client,
     required this.onTap,
   });
 
@@ -45,7 +44,7 @@ class ClientListItem extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      outlet.name,
+                      client.name,
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -53,7 +52,7 @@ class ClientListItem extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      outlet.address,
+                      client.address,
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: 11,
@@ -61,7 +60,7 @@ class ClientListItem extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (outlet.contact?.isNotEmpty ?? false) ...[
+                    if (client.contact?.isNotEmpty ?? false) ...[
                       const SizedBox(height: 2),
                       Row(
                         children: [
@@ -72,7 +71,7 @@ class ClientListItem extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            outlet.contact!,
+                            client.contact!,
                             style: TextStyle(
                               color: Colors.grey.shade600,
                               fontSize: 11,
@@ -81,7 +80,7 @@ class ClientListItem extends StatelessWidget {
                         ],
                       ),
                     ],
-                    if (outlet.email?.isNotEmpty ?? false) ...[
+                    if (client.email?.isNotEmpty ?? false) ...[
                       const SizedBox(height: 2),
                       Row(
                         children: [
@@ -93,7 +92,7 @@ class ClientListItem extends StatelessWidget {
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              outlet.email!,
+                              client.email!,
                               style: TextStyle(
                                 color: Colors.grey.shade600,
                                 fontSize: 11,

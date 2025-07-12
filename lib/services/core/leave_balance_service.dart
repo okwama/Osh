@@ -397,6 +397,8 @@ class LeaveBalanceService {
         print(
             '✅ Updated leave balance for type $leaveTypeId: used = $actualUsed days');
       }
-    } catch (e) {}
+    } catch (e) {
+      print('❌ Error syncing leave balances for staff $staffId, year $year: $e');
+    }
   }
 }

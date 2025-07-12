@@ -1,29 +1,39 @@
-import 'package:woosh/models/outlet_model.dart';
-
-class Client extends Outlet {
+class Client {
+  final int id;
+  final String name;
+  final String address;
+  final String? balance;
+  final double? latitude;
+  final double? longitude;
+  final String? email;
+  final String? contact;
+  final String? taxPin;
+  final String? location;
+  final int? clientType;
+  final int regionId;
+  final String region;
+  final int countryId;
+  final DateTime? createdAt;
   final int? addedBy;
 
   Client({
-    required super.id,
-    required super.name,
-    required super.address,
-    super.latitude,
-    super.longitude,
-    super.balance,
-    super.email,
-    super.contact,
-    super.taxPin,
-    super.location,
-    super.clientType,
-    required int regionId,
-    required String region,
-    required int countryId,
+    required this.id,
+    required this.name,
+    required this.address,
+    this.balance,
+    this.latitude,
+    this.longitude,
+    this.email,
+    this.contact,
+    this.taxPin,
+    this.location,
+    this.clientType,
+    required this.regionId,
+    required this.region,
+    required this.countryId,
+    this.createdAt,
     this.addedBy,
-  }) : super(
-          regionId: regionId,
-          region: region,
-          countryId: countryId,
-        );
+  });
 
   factory Client.fromJson(Map<String, dynamic> json) {
     // Debug logging
@@ -92,7 +102,6 @@ class Client extends Outlet {
     );
   }
 
-  @override
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -111,5 +120,43 @@ class Client extends Outlet {
       'countryId': countryId,
       if (addedBy != null) 'added_by': addedBy,
     };
+  }
+
+  Client copyWith({
+    int? id,
+    String? name,
+    String? address,
+    String? balance,
+    double? latitude,
+    double? longitude,
+    String? email,
+    String? contact,
+    String? taxPin,
+    String? location,
+    int? clientType,
+    int? regionId,
+    String? region,
+    int? countryId,
+    DateTime? createdAt,
+    int? addedBy,
+  }) {
+    return Client(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      address: address ?? this.address,
+      balance: balance ?? this.balance,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      email: email ?? this.email,
+      contact: contact ?? this.contact,
+      taxPin: taxPin ?? this.taxPin,
+      location: location ?? this.location,
+      clientType: clientType ?? this.clientType,
+      regionId: regionId ?? this.regionId,
+      region: region ?? this.region,
+      countryId: countryId ?? this.countryId,
+      createdAt: createdAt ?? this.createdAt,
+      addedBy: addedBy ?? this.addedBy,
+    );
   }
 }

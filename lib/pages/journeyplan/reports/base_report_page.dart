@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:woosh/models/journeyplan/journeyplan_model.dart';
 import 'package:woosh/models/journeyplan/report/report_model.dart';
-import 'package:woosh/services/core/journey_plan_service.dart';
+import 'package:woosh/services/core/journeyplan/journey_plan_service.dart';
 
 mixin BaseReportPageMixin<T extends StatefulWidget> on State<T> {
   TextEditingController get commentController => _commentController;

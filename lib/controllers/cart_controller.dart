@@ -20,8 +20,9 @@ class CartController extends GetxController {
       isLoading.value = true;
       await _cartHiveService.init();
       items.value = _cartHiveService.getCartItems();
-    } catch (e) {
-    } finally {
+            } catch (e) {
+          print('Error loading cart items: $e');
+        } finally {
       isLoading.value = false;
     }
   }
@@ -124,7 +125,7 @@ class CartController extends GetxController {
       try {
         final priceOption = item.product!.priceOptions
             .firstWhere((po) => po.id == item.priceOptionId);
-        price = priceOption.value?.toDouble() ?? 0.0;
+        price = priceOption.value.toDouble();
       } catch (e) {
         // Price option not found, fallback to unit cost
         price = item.product?.unitCost ?? 0.0;
@@ -144,7 +145,7 @@ class CartController extends GetxController {
       try {
         final priceOption = item.product!.priceOptions
             .firstWhere((po) => po.id == item.priceOptionId);
-        return priceOption.value?.toDouble() ?? 0.0;
+        return priceOption.value.toDouble();
       } catch (e) {
         // Price option not found, fallback to unit cost
         return item.product?.unitCost ?? 0.0;

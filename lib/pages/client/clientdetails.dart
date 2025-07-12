@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart' as ptr;
-import 'package:woosh/models/client_payment_model.dart';
-import 'package:woosh/models/outlet_model.dart';
+import 'package:woosh/models/client/client_payment_model.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:woosh/utils/app_theme.dart';
 import 'dart:io';
@@ -13,11 +12,12 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:woosh/utils/country_tax_labels.dart';
 import 'package:woosh/services/core/payment_service.dart';
 import 'package:woosh/services/core/client_stock_service.dart';
+import 'package:woosh/models/client/client_model.dart';
 
 class ClientDetailsPage extends StatefulWidget {
-  final Outlet outlet;
+  final Client client;
 
-  const ClientDetailsPage({super.key, required this.outlet});
+  const ClientDetailsPage({super.key, required this.client});
 
   @override
   State<ClientDetailsPage> createState() => _ClientDetailsPageState();
@@ -40,11 +40,11 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
   }
 
   Future<void> _decodeLocation() async {
-    if (widget.outlet.latitude != null && widget.outlet.longitude != null) {
+    if (widget.client.latitude != null && widget.client.longitude != null) {
       try {
         List<Placemark> placemarks = await placemarkFromCoordinates(
-          widget.outlet.latitude!,
-          widget.outlet.longitude!,
+          widget.client.latitude!,
+          widget.client.longitude!,
         );
         final placemark = placemarks.first;
         setState(() {
@@ -69,7 +69,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
 
     try {
       final paymentsData =
-          await PaymentService.getClientPayments(widget.outlet.id);
+          await PaymentService.getClientPayments(widget.client.id);
       setState(() {
         _payments = paymentsData;
       });
@@ -282,7 +282,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
 
                           try {
                             await PaymentService.uploadClientPayment(
-                              clientId: widget.outlet.id,
+                              clientId: widget.client.id,
                               amount: amount,
                               method: selectedMethod!,
                             );
@@ -335,7 +335,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final outlet = widget.outlet;
+    final outlet = widget.client;
 
     return Scaffold(
       backgroundColor: appBackground,
@@ -429,7 +429,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
                                   child: _detailSection(
                                     icon: Icons.badge,
                                     label: CountryTaxLabels.getTaxPinLabel(
-                                        widget.outlet.countryId),
+                                        widget.client.countryId),
                                     value: outlet.taxPin ?? '-',
                                   ),
                                 ),

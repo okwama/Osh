@@ -28,8 +28,35 @@ class SafeErrorHandler {
     if (errorString.contains('server') || errorString.contains('5')) {
       return 'Server error. Please try again later.';
     }
+    if (errorString.contains('database') || errorString.contains('mysql')) {
+      return 'Database connection error. Please try again.';
+    }
+    if (errorString.contains('authentication') ||
+        errorString.contains('auth')) {
+      return 'Authentication failed. Please try again.';
+    }
 
     return 'Something went wrong. Please try again.';
+  }
+
+  /// Sanitize error for logging (never show to users)
+  static String sanitizeErrorForLogging(dynamic error) {
+    final errorString = error.toString();
+
+    // Remove sensitive information
+    String sanitized = errorString
+        .replaceAll(
+            RegExp(r'password[=:]\s*\S+', caseSensitive: false), 'password=***')
+        .replaceAll(
+            RegExp(r'token[=:]\s*\S+', caseSensitive: false), 'token=***')
+        .replaceAll(
+            RegExp(r'phone[=:]\s*\S+', caseSensitive: false), 'phone=***')
+        .replaceAll(
+            RegExp(r'email[=:]\s*\S+', caseSensitive: false), 'email=***')
+        .replaceAll(
+            RegExp(r'user[=:]\s*\S+', caseSensitive: false), 'user=***');
+
+    return sanitized;
   }
 
   /// Safe SnackBar that filters raw errors
@@ -38,188 +65,70 @@ class SafeErrorHandler {
     dynamic error, {
     Color? backgroundColor,
     Duration? duration,
-    SnackBarAction? action,
     bool isSuccess = false,
   }) {
-    String message;
-    Color bgColor;
-
-    if (isSuccess) {
-      // For success messages, show as-is
-      message = error.toString();
-      bgColor = backgroundColor ?? Colors.green.shade600;
-    } else {
-      // For errors, filter through the error handler
-      message = getUserFriendlyMessage(error);
-      bgColor = backgroundColor ?? Colors.red.shade600;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              isSuccess ? Icons.check_circle : Icons.error_outline,
-              color: Colors.white,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: bgColor,
-        duration: duration ?? const Duration(seconds: 4),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        action: action,
-      ),
-    );
-  }
-
-  /// Safe Get.snackbar that filters raw errors
-  static void showGetSnackBar(
-    dynamic error, {
-    String? title,
-    Color? backgroundColor,
-    Duration? duration,
-    bool isSuccess = false,
-    VoidCallback? onRetry,
-  }) {
-    String message;
-    String snackTitle;
-    Color bgColor;
-
-    if (isSuccess) {
-      // For success messages, show as-is
-      message = error.toString();
-      snackTitle = title ?? 'Success';
-      bgColor = backgroundColor ?? Colors.green.shade600;
-    } else {
-      // For errors, filter through the error handler
-      message = getUserFriendlyMessage(error);
-      snackTitle = title ?? 'Oops!';
-      bgColor = backgroundColor ?? Colors.red.shade600;
-    }
-
-    Get.snackbar(
-      snackTitle,
-      message,
-      backgroundColor: bgColor,
-      colorText: Colors.white,
-      duration: duration ?? const Duration(seconds: 4),
-      margin: const EdgeInsets.all(16),
-      borderRadius: 8,
-      icon: Icon(
-        isSuccess ? Icons.check_circle : Icons.error_outline,
-        color: Colors.white,
-        size: 20,
-      ),
-      mainButton: onRetry != null
-          ? TextButton(
-              onPressed: () {
-                Get.back();
-                onRetry();
-              },
-              child: const Text(
-                'Retry',
-                style: TextStyle(color: Colors.white),
-              ),
-            )
-          : null,
-    );
-  }
-
-  /// Safe dialog that filters raw errors
-  static Future<void> showErrorDialog(
-    BuildContext context,
-    dynamic error, {
-    String? title,
-    VoidCallback? onRetry,
-  }) async {
     final message = getUserFriendlyMessage(error);
 
-    return showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(Icons.error_outline, color: Colors.red.shade600),
-            const SizedBox(width: 8),
-            Text(title ?? 'Something went wrong'),
-          ],
-        ),
-        content: Text(message),
-        actions: [
-          if (onRetry != null)
-            TextButton(
-              onPressed: () {
-                Get.back();
-                onRetry();
-              },
-              child: const Text('Retry'),
-            ),
-          ElevatedButton(
-            onPressed: () => Get.back(),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Safe success message
-  static void showSuccess(
-    BuildContext context,
-    String message, {
-    Duration? duration,
-  }) {
-    showSnackBar(
-      context,
+    Get.snackbar(
+      isSuccess ? 'Success' : 'Error',
       message,
-      isSuccess: true,
-      duration: duration,
+      backgroundColor:
+          backgroundColor ?? (isSuccess ? Colors.green : Colors.red),
+      colorText: Colors.white,
+      duration: duration ?? const Duration(seconds: 4),
+      snackPosition: SnackPosition.TOP,
     );
   }
 
-  /// Safe success with Get.snackbar
-  static void showGetSuccess(
-    String message, {
-    String? title,
-    Duration? duration,
-  }) {
-    showGetSnackBar(
-      message,
-      title: title ?? 'Success',
-      isSuccess: true,
-      duration: duration,
-    );
-  }
+  /// Safe error handler for async operations
+  static Future<T> safeAsyncOperation<T>(
+    Future<T> Function() operation, {
+    T? fallbackValue,
+    String? customErrorMessage,
+  }) async {
+    try {
+      return await operation();
+    } catch (e) {
+      final message = customErrorMessage ?? getUserFriendlyMessage(e);
+      showSnackBar(Get.context!, message);
 
-  /// Log error safely for debugging
-  static void logError(dynamic error, {String? context}) {
-  }
-
-  /// Check if error should be retried
-  static bool shouldRetry(dynamic error) {
-    final errorString = error.toString().toLowerCase();
-    return errorString.contains('timeout') ||
-        errorString.contains('connection') ||
-        errorString.contains('network') ||
-        errorString.contains('socket');
-  }
-
-  /// Get retry delay based on error type
-  static Duration getRetryDelay(dynamic error) {
-    final errorString = error.toString().toLowerCase();
-
-    if (errorString.contains('rate limit') || errorString.contains('429')) {
-      return const Duration(seconds: 30);
+      if (fallbackValue != null) {
+        return fallbackValue;
+      }
+      rethrow;
     }
-    if (errorString.contains('server') || errorString.contains('5')) {
-      return const Duration(seconds: 10);
+  }
+
+  /// Handle errors without showing to user (for background operations)
+  static void handleSilentError(dynamic error, {String? context}) {
+    // Only log sanitized error for debugging
+    final sanitizedError = sanitizeErrorForLogging(error);
+    // In production, you might send this to a logging service
+    // but never expose raw errors to users
+  }
+
+  /// Validate that no raw errors are being shown
+  static bool containsRawError(String message) {
+    final rawErrorPatterns = [
+      'exception',
+      'error:',
+      'failed:',
+      'stack trace',
+      'socketexception',
+      'timeoutexception',
+      'sqlexception',
+    ];
+
+    final lowerMessage = message.toLowerCase();
+    return rawErrorPatterns.any((pattern) => lowerMessage.contains(pattern));
+  }
+
+  /// Ensure message is safe for user display
+  static String ensureSafeMessage(String message) {
+    if (containsRawError(message)) {
+      return getUserFriendlyMessage(message);
     }
-    return const Duration(seconds: 3);
+    return message;
   }
 }
 

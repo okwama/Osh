@@ -25,7 +25,7 @@ class Store {
         region: json['region'] != null ? Region.fromJson(json['region']) : null,
         status: json['status'] ?? 0,
       );
-    } catch (e, stackTrace) {
+    } catch (e) {
       rethrow;
     }
   }

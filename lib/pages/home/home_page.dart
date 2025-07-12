@@ -11,7 +11,7 @@ import 'package:woosh/pages/order/viewOrder/vieworder_page.dart';
 import 'package:woosh/pages/pos/upliftSaleCart_page.dart';
 import 'package:woosh/pages/task/task.dart';
 import 'package:woosh/services/core/task_service.dart';
-import 'package:woosh/services/core/journey_plan_service.dart';
+import 'package:woosh/services/core/journeyplan/journey_plan_service.dart';
 import 'package:woosh/services/core/session_service.dart';
 import 'package:woosh/models/journeyplan/journeyplan_model.dart';
 import 'package:woosh/services/core/notice_service.dart';
@@ -22,7 +22,7 @@ import 'package:woosh/pages/profile/profile.dart';
 import 'package:woosh/utils/app_theme.dart';
 import 'package:woosh/widgets/gradient_app_bar.dart';
 import 'package:woosh/widgets/gradient_widgets.dart';
-import 'package:woosh/models/outlet_model.dart';
+import 'package:woosh/models/client/client_model.dart';
 import 'package:woosh/controllers/cart_controller.dart';
 
 import '../../components/menu_tile.dart';
@@ -92,7 +92,6 @@ class _HomePageState extends State<HomePage> {
           }).length;
         });
       }
-
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -110,8 +109,7 @@ class _HomePageState extends State<HomePage> {
           _pendingTasks = tasks.length;
         });
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   Future<void> _loadUnreadNotices() async {
@@ -124,7 +122,6 @@ class _HomePageState extends State<HomePage> {
           _unreadNotices = recentNotices;
         });
       }
-
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -199,8 +196,7 @@ class _HomePageState extends State<HomePage> {
         for (final key in keysToRemove) {
           box.remove(key);
         }
-      } catch (e) {
-      }
+      } catch (e) {}
     });
   }
 
@@ -220,18 +216,15 @@ class _HomePageState extends State<HomePage> {
       try {
         final productHiveService = Get.find<ProductHiveService>();
         await productHiveService.clearAllProducts();
-      } catch (e) {
-      }
+      } catch (e) {}
 
       try {
         final cartHiveService = Get.find<CartHiveService>();
         await cartHiveService.clearCart();
-      } catch (e) {
-      }
+      } catch (e) {}
 
       // Clear session cache
       SessionService.clearCache();
-
 
       // Reload all data
       await Future.wait([
@@ -253,12 +246,14 @@ class _HomePageState extends State<HomePage> {
         );
       }
     } catch (e) {
+      // Silent error handling - show success regardless of minor errors
+      print('🔇 Silent error [home-refresh]: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('?? Refresh completed with some errors: $e'),
-            backgroundColor: Colors.orange,
-            duration: Duration(seconds: 3),
+          const SnackBar(
+            content: Text('🔄 Dashboard refreshed'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
           ),
         );
       }
@@ -546,8 +541,7 @@ class _HomePageState extends State<HomePage> {
                       icon: Icons.map,
                       badgeCount: _isLoading ? null : _pendingJourneyPlans,
                       onTap: _isSessionActive
-                          ? () =>
-                              Get.to(() => const JourneyPlansLoadingScreen())
+                          ? () => Get.to(() => const JourneyPlansPage())
                           : () => _showSessionInactiveDialog(),
                     ),
                     MenuTile(
@@ -629,12 +623,12 @@ class _HomePageState extends State<HomePage> {
                           () => const ViewClientPage(forUpliftSale: true),
                           preventDuplicates: true,
                           transition: Transition.rightToLeft,
-                        )?.then((selectedOutlet) {
-                          if (selectedOutlet != null &&
-                              selectedOutlet is Outlet) {
+                        )?.then((selectedClient) {
+                          if (selectedClient != null &&
+                              selectedClient is Client) {
                             Get.off(
                               () => UpliftSaleCartPage(
-                                outlet: selectedOutlet,
+                                outlet: selectedClient,
                               ),
                               transition: Transition.rightToLeft,
                             );

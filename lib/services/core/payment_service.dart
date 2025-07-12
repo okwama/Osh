@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:woosh/models/client_payment_model.dart';
+import 'package:woosh/models/client/client_payment_model.dart';
 import 'package:woosh/services/database_service.dart';
 
 /// Payment service using direct database connections

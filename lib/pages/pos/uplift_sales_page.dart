@@ -6,7 +6,7 @@ import 'package:woosh/utils/date_utils.dart' as custom_date;
 import 'package:woosh/utils/currency_utils.dart';
 import 'package:woosh/pages/client/viewclient_page.dart';
 import 'package:woosh/pages/pos/upliftSaleCart_page.dart';
-import 'package:woosh/models/outlet_model.dart';
+import 'package:woosh/models/client/client_model.dart';
 
 class UpliftSalesPage extends StatefulWidget {
   const UpliftSalesPage({super.key});
@@ -348,11 +348,11 @@ class _UpliftSalesPageState extends State<UpliftSalesPage> {
             () => const ViewClientPage(forUpliftSale: true),
             preventDuplicates: true,
             transition: Transition.rightToLeft,
-          )?.then((selectedOutlet) {
-            if (selectedOutlet != null && selectedOutlet is Outlet) {
+          )?.then((selectedClient) {
+            if (selectedClient != null && selectedClient is Client) {
               Get.off(
                 () => UpliftSaleCartPage(
-                  outlet: selectedOutlet,
+                  outlet: selectedClient,
                 ),
                 transition: Transition.rightToLeft,
               );

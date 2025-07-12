@@ -15,7 +15,7 @@ class ProductHiveModel extends HiveObject {
   final String name;
 
   @HiveField(2)
-  final int category_id;
+  final int categoryId;
 
   @HiveField(3)
   final String category;
@@ -58,7 +58,7 @@ class ProductHiveModel extends HiveObject {
   ProductHiveModel({
     required this.id,
     required this.name,
-    required this.category_id,
+    required this.categoryId,
     required this.category,
     this.description,
     required this.createdAt,
@@ -95,7 +95,7 @@ class ProductHiveModel extends HiveObject {
     return ProductHiveModel(
       id: product.id,
       name: product.name,
-      category_id: product.categoryId,
+      categoryId: product.categoryId,
       category: product.category,
       description: product.description,
       createdAt: product.createdAt.toIso8601String(),
@@ -123,14 +123,14 @@ class ProductHiveModel extends HiveObject {
         id: defaultPriceOptionId!,
         option: defaultPriceOption!,
         value: defaultPriceValue!.toInt(),
-        categoryId: defaultPriceCategoryId ?? category_id,
+        categoryId: defaultPriceCategoryId ?? categoryId,
       ));
     }
 
     return ProductModel(
       id: id,
       name: name,
-      categoryId: category_id,
+      categoryId: categoryId,
       category: category,
       unitCost: defaultPriceValue ?? 0.0,
       description: description,

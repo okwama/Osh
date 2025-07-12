@@ -10,6 +10,7 @@ import 'package:woosh/models/journeyplan/report/visibilityReport_model.dart';
 import 'package:woosh/services/core/reports/visibility_report_service.dart';
 import 'package:woosh/services/core/upload_service.dart';
 import 'package:woosh/utils/app_theme.dart';
+import 'package:woosh/utils/optimistic_ui_handler.dart';
 import 'package:woosh/widgets/gradient_app_bar.dart';
 import 'package:image/image.dart' as img;
 import 'dart:typed_data';
@@ -169,7 +170,6 @@ class _VisibilityReportPageState extends State<VisibilityReportPage>
       final imageUrl = await UploadService.uploadImage(compressedFile);
       stopwatch.stop();
 
-
       // Clean up temporary file
       await compressedFile.delete();
 
@@ -201,8 +201,6 @@ class _VisibilityReportPageState extends State<VisibilityReportPage>
   Future<void> _submitReport() async {
     if (_isSubmitting) return;
 
-    final stopwatch = Stopwatch()..start();
-
     if (_imageFile == null &&
         _imageUrl == null &&
         _commentController.text.trim().isEmpty) {
@@ -215,48 +213,43 @@ class _VisibilityReportPageState extends State<VisibilityReportPage>
       return;
     }
 
-    setState(() => _isSubmitting = true);
+    // Use optimistic UI - show success immediately and sync in background
+    OptimisticUIHandler.optimisticUpdate(
+      successMessage: 'Visibility report submitted successfully',
+      onOptimisticSuccess: () {
+        widget.onReportSubmitted?.call();
+        Get.back();
+      },
+      operation: () async {
+        String? imageUrl;
 
-    try {
-      // Optimistically show success
-      widget.onReportSubmitted?.call();
-
-      String? imageUrl;
-      String? imageError;
-
-      // Upload image if present
-      if (_imageFile != null) {
-        try {
-          imageUrl = (await _uploadImage())?['url'] as String?;
-          print(
-              '??? Image upload completed: ${imageUrl != null ? 'Success' : 'Failed'}');
-        } catch (error) {
-          if (error.toString().contains('SocketException') ||
-              error.toString().contains('XMLHttpRequest error')) {
-            imageError =
-                'No internet connection. Image will be uploaded when online.';
-          } else {
-            imageError = error.toString();
+        // Upload image if present
+        if (_imageFile != null) {
+          try {
+            imageUrl = (await _uploadImage())?['url'] as String?;
+            print(
+                '📷 Image uploaded for visibility report: ${imageUrl != null ? 'Success' : 'Failed'}');
+          } catch (error) {
+            print('📷 Image upload failed silently: $error');
+            // Continue without image - optimistic UI doesn't show this error
           }
         }
-      }
 
-      // Get sales rep data
-      final box = GetStorage();
-      final salesRepData = box.read('salesRep');
-      final int? salesRepId =
-          salesRepData is Map<String, dynamic> ? salesRepData['id'] : null;
+        // Get sales rep data
+        final box = GetStorage();
+        final salesRepData = box.read('salesRep');
+        final int? salesRepId =
+            salesRepData is Map<String, dynamic> ? salesRepData['id'] : null;
 
-      if (salesRepId == null) {
-        throw Exception(
-            "User not authenticated: Could not determine salesRep ID");
-      }
+        if (salesRepId == null) {
+          throw Exception(
+              "User not authenticated: Could not determine salesRep ID");
+        }
 
-      print(
-          '?? Creating report with image: ${imageUrl != null ? 'Yes' : 'No'}');
+        print(
+            '📊 Submitting visibility report with image: ${imageUrl != null ? 'Yes' : 'No'}');
 
-      // Use new VisibilityReportService to submit report
-      try {
+        // Submit visibility report
         await VisibilityReportService.submitVisibilityReport(
           journeyPlanId: widget.journeyPlan.id!,
           clientId: widget.journeyPlan.client.id,
@@ -264,97 +257,10 @@ class _VisibilityReportPageState extends State<VisibilityReportPage>
           imageUrl: imageUrl,
           userId: salesRepId,
         );
-      } catch (e) {
-        if (e.toString().contains('SocketException') ||
-            e.toString().contains('XMLHttpRequest error')) {
-          // Store report locally for later sync
-          // TODO: Implement local storage for offline reports
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                    'No internet connection. Report will be submitted when online.'),
-                behavior: SnackBarBehavior.floating,
-                duration: Duration(seconds: 5),
-              ),
-            );
-          }
-          return;
-        }
-        rethrow;
-      }
 
-      stopwatch.stop();
-
-      if (mounted) {
-        // Show success with animation
-        await _animationController.reverse();
-        Get.back();
-
-        // Show appropriate success message
-        if (imageError != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(imageError),
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 5),
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.white, size: 20),
-                  SizedBox(width: 8),
-                  Text('Visibility report submitted successfully'),
-                ],
-              ),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      stopwatch.stop();
-      print(
-          '? Total submission failed after ${stopwatch.elapsedMilliseconds}ms');
-
-      if (mounted) {
-        String errorMessage = 'Error submitting report';
-        if (e.toString().contains('SocketException') ||
-            e.toString().contains('XMLHttpRequest error')) {
-          errorMessage =
-              'No internet connection. Please try again when online.';
-        } else {
-          errorMessage = 'Error submitting report: $e';
-        }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.error_outline, color: Colors.white, size: 20),
-                const SizedBox(width: 8),
-                Expanded(child: Text(errorMessage)),
-              ],
-            ),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            action: SnackBarAction(
-              label: 'Retry',
-              textColor: Colors.white,
-              onPressed: _submitReport,
-            ),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-      }
-    }
+        print('✅ Visibility report submitted successfully');
+      },
+    );
   }
 
   @override

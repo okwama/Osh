@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:woosh/models/client_model.dart';
+import 'package:woosh/models/client/client_model.dart';
 import 'package:woosh/models/journeyplan/journeyplan_model.dart';
 import 'package:woosh/pages/journeyplan/createJourneyplan.dart';
 import 'package:woosh/pages/journeyplan/journeyview.dart';
 import 'package:woosh/services/database/pagination_service.dart';
-import 'package:woosh/services/core/journey_plan_service.dart';
+import 'package:woosh/services/core/journeyplan/journey_plan_service.dart';
 import 'package:woosh/services/database_service.dart';
 import 'package:woosh/utils/app_theme.dart';
 import 'package:woosh/widgets/gradient_app_bar.dart';
@@ -56,6 +56,7 @@ class _JourneyPlansLoadingScreenState extends State<JourneyPlansLoadingScreen> {
             'countryId IS NOT NULL AND countryId > 0', // Exclude null/0 countryId
         orderBy: 'id',
         orderDirection: 'DESC',
+        whereParams: [], // Add empty whereParams array
         columns: [
           'id',
           'name',
@@ -180,7 +181,12 @@ class _JourneyPlansPageState extends State<JourneyPlansPage>
       _journeyPlans = widget.preloadedPlans!;
       _isLoading = false;
     } else {
-      _loadData();
+      // Show UI immediately, load data in background
+      _isLoading = true;
+      // Start loading data immediately after first frame
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadDataFast();
+      });
     }
 
     _scrollController.addListener(_onScroll);
@@ -243,6 +249,7 @@ class _JourneyPlansPageState extends State<JourneyPlansPage>
           'countryId IS NOT NULL AND countryId > 0', // Exclude null/0 countryId
       orderBy: 'id',
       orderDirection: 'DESC',
+      whereParams: [], // Add empty whereParams array
       columns: [
         'id',
         'name',
@@ -360,6 +367,74 @@ class _JourneyPlansPageState extends State<JourneyPlansPage>
     }
   }
 
+  /// Fast data loading method - prioritizes journey plans first
+  Future<void> _loadDataFast() async {
+    if (!mounted) return;
+
+    try {
+      // 1. Load journey plans first (most important)
+      final journeyPlans = await JourneyPlanService.getJourneyPlans(
+        page: 1,
+        excludePast: true,
+      );
+
+      // Update UI immediately with journey plans
+      if (mounted) {
+        setState(() {
+          _journeyPlans = journeyPlans;
+          _currentPage = 1;
+          _hasMoreData = true;
+          _isLoading = false; // Show content immediately
+        });
+      }
+
+      // 2. Load clients in background (less critical)
+      _loadClientsInBackground();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        // Handle error silently - show empty state instead of error dialog
+        print('🔇 Silent error [journey-plans-load]: $e');
+      }
+    }
+  }
+
+  /// Load clients in background without blocking UI
+  Future<void> _loadClientsInBackground() async {
+    try {
+      final clients = await _fetchClients(page: 1, limit: 100);
+
+      if (mounted) {
+        // Build a map for efficient client lookup
+        final Map<int, Client> clientMap = {for (var c in clients) c.id: c};
+
+        // Update journey plans with full client data
+        final List<JourneyPlan> updatedJourneyPlans = _journeyPlans.map((plan) {
+          final Client client = clientMap[plan.client.id] ?? plan.client;
+          return JourneyPlan(
+            id: plan.id,
+            date: plan.date,
+            time: plan.time,
+            salesRepId: plan.salesRepId,
+            status: plan.status,
+            routeId: plan.routeId,
+            client: client,
+            showUpdateLocation: plan.showUpdateLocation,
+          );
+        }).toList();
+
+        setState(() {
+          _journeyPlans = updatedJourneyPlans;
+          _clients = clients;
+        });
+      }
+    } catch (e) {
+      // Silent fail for background loading
+    }
+  }
+
   Future<void> _loadData() async {
     if (mounted) {
       setState(() {
@@ -445,29 +520,12 @@ class _JourneyPlansPageState extends State<JourneyPlansPage>
   }
 
   void _showGenericErrorDialog() {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Row(
-          children: [
-            Icon(Icons.error_outline, color: Colors.white),
-            SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                'Could not refresh plans. Please check your connection.',
-                style: TextStyle(fontSize: 14),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: Colors.red.shade700,
-        action: SnackBarAction(
-          label: 'Retry',
-          textColor: Colors.white,
-          onPressed: _loadData,
-        ),
-      ),
-    );
+    // Silent error handling - no longer shows error dialogs to users
+    // Errors are logged for debugging but users see empty state instead
+    print('🔇 Silent error [journey-plans-refresh]: Generic error occurred');
+
+    // Could implement background retry here if needed
+    // Timer(Duration(seconds: 30), () => _loadData());
   }
 
   Future<void> _checkActiveVisit() async {
@@ -484,8 +542,7 @@ class _JourneyPlansPageState extends State<JourneyPlansPage>
           _activeVisit = activePlans.first;
         });
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   Future<void> _navigateToCreateJourneyPlan() async {
@@ -749,8 +806,7 @@ class _JourneyPlansPageState extends State<JourneyPlansPage>
           }
         });
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   void _hideJourneyPlan(int journeyPlanId) {
@@ -865,6 +921,83 @@ class _JourneyPlansPageState extends State<JourneyPlansPage>
     });
   }
 
+  /// Build shimmer loading effect
+  Widget _buildLoadingShimmer() {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16.0),
+          child: const Center(
+            child: Text(
+              'My Journey Plans',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: Shimmer.fromColors(
+            baseColor: Colors.grey[300]!,
+            highlightColor: Colors.grey[100]!,
+            child: ListView.builder(
+              itemCount: 5, // Show 5 shimmer items
+              itemBuilder: (context, index) {
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                      horizontal: 8.0, vertical: 4.0),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12.0, vertical: 10.0),
+                    height: 70,
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: double.infinity,
+                                height: 16,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(height: 4),
+                              Container(
+                                width: 100,
+                                height: 12,
+                                color: Colors.white,
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          width: 80,
+                          height: 20,
+                          color: Colors.white,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -892,7 +1025,7 @@ class _JourneyPlansPageState extends State<JourneyPlansPage>
         ],
       ),
       body: _isLoading && _journeyPlans.isEmpty
-          ? const Center(child: CircularProgressIndicator())
+          ? _buildLoadingShimmer()
           : Column(
               children: [
                 Container(

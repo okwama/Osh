@@ -1,6 +1,6 @@
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:woosh/services/token_service.dart';
-import 'query_executor.dart';
+import 'unified_database_service.dart';
 
 /// Handles user authentication and permission validation
 class DatabaseAuthService {
@@ -10,7 +10,7 @@ class DatabaseAuthService {
 
   DatabaseAuthService._();
 
-  final QueryExecutor _queryExecutor = QueryExecutor.instance;
+  final UnifiedDatabaseService _queryExecutor = UnifiedDatabaseService.instance;
 
   /// Get current user ID from JWT token
   int getCurrentUserId() {
@@ -42,44 +42,44 @@ class DatabaseAuthService {
       }
 
       final payload = JwtDecoder.decode(token);
-      
+
       // Check if countryId is in the token payload (new tokens)
       if (payload['countryId'] != null) {
         return payload;
       }
-      
+
       // For backward compatibility: fetch countryId from database if missing from token
       final userId = payload['userId'];
       if (userId == null) {
         throw Exception('User ID not found in token');
       }
-      
+
       // Fetch countryId from database asynchronously (this is a fallback)
       final countryId = await _fetchUserCountryId(userId);
-      
+
       if (countryId == null) {
         throw Exception('User countryId not found in database - access denied');
       }
-      
+
       // Add countryId to payload
       payload['countryId'] = countryId;
-      
+
       return payload;
     } catch (e) {
       throw Exception('Failed to get current user details: $e');
     }
   }
-  
+
   /// Fetch user's countryId from database (for backward compatibility)
   Future<int?> _fetchUserCountryId(dynamic userId) async {
     try {
       final userIdInt = userId is int ? userId : int.parse(userId.toString());
-      
+
       final results = await _queryExecutor.execute(
         'SELECT countryId FROM SalesRep WHERE id = ? AND status = 0',
         [userIdInt],
       );
-      
+
       if (results.isEmpty) return null;
       return results.first['countryId'] as int?;
     } catch (e) {

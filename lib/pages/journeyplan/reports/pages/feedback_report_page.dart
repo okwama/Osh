@@ -6,6 +6,7 @@ import 'package:woosh/models/journeyplan/report/report_model.dart';
 import 'package:woosh/models/journeyplan/report/feedbackReport_model.dart';
 import 'package:woosh/services/core/reports/feedback_report_service.dart';
 import 'package:woosh/utils/app_theme.dart';
+import 'package:woosh/utils/optimistic_ui_handler.dart';
 import 'package:woosh/widgets/gradient_app_bar.dart';
 
 class FeedbackReportPage extends StatefulWidget {
@@ -36,72 +37,36 @@ class _FeedbackReportPageState extends State<FeedbackReportPage> {
       return;
     }
 
-    setState(() => _isSubmitting = true);
-
-    try {
-      final box = GetStorage();
-      final salesRepData = box.read('salesRep');
-      final int? salesRepId =
-          salesRepData is Map<String, dynamic> ? salesRepData['id'] : null;
-
-      if (salesRepId == null) {
-        throw Exception(
-            "User not authenticated: Could not determine salesRep ID");
-      }
-
-      // Use new FeedbackReportService
-      await FeedbackReportService.submitFeedbackReport(
-        journeyPlanId: widget.journeyPlan.id!,
-        clientId: widget.journeyPlan.client.id,
-        comment: _commentController.text.trim(),
-        userId: salesRepId,
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white, size: 20),
-                SizedBox(width: 8),
-                Text('Feedback report submitted successfully'),
-              ],
-            ),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+    // Use optimistic UI - show success immediately and sync in background
+    OptimisticUIHandler.optimisticUpdate(
+      successMessage: 'Feedback report submitted successfully',
+      onOptimisticSuccess: () {
         widget.onReportSubmitted?.call();
-        Get.back(); // Return to previous page
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.error_outline, color: Colors.white, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text('Error submitting report: ${e.toString()}'),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            action: SnackBarAction(
-              label: 'Retry',
-              textColor: Colors.white,
-              onPressed: _submitReport,
-            ),
-          ),
+        Get.back();
+      },
+      operation: () async {
+        final box = GetStorage();
+        final salesRepData = box.read('salesRep');
+        final int? salesRepId =
+            salesRepData is Map<String, dynamic> ? salesRepData['id'] : null;
+
+        if (salesRepId == null) {
+          throw Exception("User not authenticated: Could not determine salesRep ID");
+        }
+
+        print('📝 Submitting feedback report');
+
+        // Submit feedback report
+        await FeedbackReportService.submitFeedbackReport(
+          journeyPlanId: widget.journeyPlan.id!,
+          clientId: widget.journeyPlan.client.id,
+          comment: _commentController.text.trim(),
+          userId: salesRepId,
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-      }
-    }
+
+        print('✅ Feedback report submitted successfully');
+      },
+    );
   }
 
   @override
@@ -284,4 +249,3 @@ class _FeedbackReportPageState extends State<FeedbackReportPage> {
     super.dispose();
   }
 }
-

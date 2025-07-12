@@ -3,9 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:woosh/models/client_model.dart';
+import 'package:woosh/models/client/client_model.dart';
 import 'package:woosh/models/journeyplan/journeyplan_model.dart';
-import 'package:woosh/models/outlet_model.dart';
 import 'package:woosh/models/Products_Inventory/product_model.dart';
 import 'package:woosh/models/journeyplan/report/productReturn_model.dart';
 import 'package:woosh/models/journeyplan/report/product_return_item_model.dart';
@@ -17,12 +16,12 @@ import 'package:woosh/utils/app_theme.dart';
 import 'package:woosh/widgets/gradient_app_bar.dart';
 
 class ProductReturnPage extends StatefulWidget {
-  final Outlet outlet;
+  final Client client;
   final VoidCallback? onReportSubmitted;
 
   const ProductReturnPage({
     super.key,
-    required this.outlet,
+    required this.client,
     this.onReportSubmitted,
   });
 
@@ -150,7 +149,7 @@ class _ProductReturnPageState extends State<ProductReturnPage> {
 
       // Use new ProductReturnService to submit report
       await ProductReturnService.submitProductReturnReport(
-        clientId: widget.outlet.id, // Use the id from the outlet as clientId
+              clientId: widget.client.id, // Use the id from the outlet as clientId
         productReturnItems: items,
         userId: salesRepId,
       );
@@ -246,7 +245,7 @@ class _ProductReturnPageState extends State<ProductReturnPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                widget.outlet.name,
+                                widget.client.name,
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -254,7 +253,7 @@ class _ProductReturnPageState extends State<ProductReturnPage> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                widget.outlet.address,
+                                widget.client.address,
                                 style: TextStyle(
                                   color: Colors.grey.shade600,
                                   fontSize: 14,

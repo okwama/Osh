@@ -4,6 +4,8 @@ import 'package:bcrypt/bcrypt.dart';
 import 'package:woosh/models/salerep/sales_rep_model.dart';
 import 'package:woosh/services/database_service.dart';
 import 'package:woosh/services/token_service.dart';
+import 'package:woosh/services/database/connection_pool.dart';
+import 'package:mysql1/mysql1.dart';
 
 // 1 is inactive 0 is active
 /// Authentication service using direct database connections
@@ -14,99 +16,43 @@ class AuthService {
   static Future<Map<String, dynamic>> login(
       String phoneNumber, String password) async {
     try {
-
-      // Test database connectivity first
-      final connectionTest = await _db.testConnection();
-      if (!connectionTest['success']) {
-        return {
-          'success': false,
-          'message':
-              'Database connection failed. Please check your internet connection and try again.',
-          'error': connectionTest['message'],
-        };
+      // Ensure database is initialized (only once)
+      if (!_db.isInitialized) {
+        print('🔄 Initializing database before login...');
+        await _db.initialize();
       }
 
-      // Query SalesRep table to get user and stored password
-      const sql = '''
-        SELECT 
-          id, name, email, phoneNumber, password, country, region, route,
-          visits_targets, new_clients, vapes_targets, pouches_targets,
-          role, status, photoUrl, managerId, createdAt, updatedAt
-        FROM SalesRep 
-        WHERE phoneNumber = ? AND status = 0
-      ''';
+      // Get a connection from the pool
+      final connection = await ConnectionPool.instance.getConnection();
+      try {
+        // Execute login query
+        final results = await connection.query(
+          'SELECT * FROM users WHERE phone_number = ? AND password = ?',
+          [phoneNumber, password],
+        );
 
-      final results = await _db.query(sql, [phoneNumber]);
+        if (results.isEmpty) {
+          return {
+            'success': false,
+            'message': 'Invalid phone number or password',
+          };
+        }
 
-      if (results.isEmpty) {
+        final user = results.first;
         return {
-          'success': false,
-          'message': 'Invalid phone number or password',
+          'success': true,
+          'user': user,
+          'message': 'Login successful',
         };
+      } finally {
+        // Always return the connection to the pool
+        ConnectionPool.instance.returnConnection(connection);
       }
-
-      final userData = results.first.fields;
-      final storedPassword = userData['password']?.toString();
-
-      // Check if password exists
-      if (storedPassword == null || storedPassword.isEmpty) {
-        return {
-          'success': false,
-          'message': 'Invalid phone number or password',
-        };
-      }
-
-      // Verify password using bcrypt
-      if (!BCrypt.checkpw(password, storedPassword)) {
-        print(
-            '❌ Password verification failed for user: ${userData['phoneNumber']}');
-        return {
-          'success': false,
-          'message': 'Wrong password',
-        };
-      }
-
-      final salesRep = SalesRepModel.fromMap(userData);
-      print(
-          '✅ SalesRepModel created successfully: ${salesRep.name} (ID: ${salesRep.id})');
-
-      // Generate JWT token
-      final jwtToken = await _generateToken(salesRep.id);
-
-      // Store token
-      await TokenService.storeTokens(
-        accessToken: jwtToken,
-        refreshToken:
-            jwtToken, // In a real app, you'd generate a separate refresh token
-      );
-
-
-      return {
-        'success': true,
-        'message': 'Login successful',
-        'salesRep': salesRep.toMap(),
-        'token': jwtToken,
-      };
     } catch (e) {
-
-      // Provide more specific error messages
-      String errorMessage = 'Login failed';
-      if (e.toString().contains('timeout')) {
-        errorMessage =
-            'Connection timeout. Please check your internet connection and try again.';
-      } else if (e.toString().contains('refused')) {
-        errorMessage =
-            'Database connection refused. The server may be down or temporarily unavailable.';
-      } else if (e.toString().contains('authentication')) {
-        errorMessage =
-            'Database authentication failed. Please contact support.';
-      } else {
-        errorMessage = 'Login failed: $e';
-      }
-
+      print('❌ Login failed: $e');
       return {
         'success': false,
-        'message': errorMessage,
+        'message': 'Login failed. Please try again.',
       };
     }
   }
@@ -115,7 +61,6 @@ class AuthService {
   static Future<Map<String, dynamic>> register(
       Map<String, dynamic> userData) async {
     try {
-
       // Check if user already exists
       const checkSql = 'SELECT id FROM SalesRep WHERE phoneNumber = ?';
       final checkResults = await _db.query(checkSql, [userData['phoneNumber']]);
@@ -363,5 +308,15 @@ class AuthService {
         .replaceAll('=', '')
         .replaceAll('+', '-')
         .replaceAll('/', '_');
+  }
+
+  /// Test retry logic (for debugging)
+  static Future<Map<String, dynamic>> testRetryLogic() async {
+    const testPhoneNumber = '1234567890';
+    const testPassword = 'testpassword';
+
+    final result = await login(testPhoneNumber, testPassword);
+
+    return result;
   }
 }

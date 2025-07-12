@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:woosh/models/hive/order_model.dart';
-import 'package:woosh/models/outlet_model.dart';
+import 'package:woosh/models/client/client_model.dart';
 import 'package:woosh/models/Products_Inventory/product_model.dart';
 import 'package:woosh/services/core/product_service.dart';
 import 'package:woosh/services/core/currency_config_service.dart';
@@ -21,7 +21,7 @@ import 'package:hive/hive.dart';
 import 'package:get_storage/get_storage.dart';
 
 class ProductsGridPage extends StatefulWidget {
-  final Outlet outlet;
+  final Client outlet;
   final OrderModel? order;
 
   const ProductsGridPage({
@@ -75,8 +75,7 @@ class _ProductsGridPageState extends State<ProductsGridPage>
       if (mounted) {
         setState(() {});
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   // Helper method to ensure Hive adapters are registered
@@ -179,7 +178,7 @@ class _ProductsGridPageState extends State<ProductsGridPage>
             });
           } else {
             // No matching cached data, fetch from API
-          _loadInitialData();
+            _loadInitialData();
           }
         }
       }
@@ -203,7 +202,6 @@ class _ProductsGridPageState extends State<ProductsGridPage>
 
       // Refresh stock service cache
       await StockService.instance.refreshCache();
-
     } finally {
       if (mounted) {
         setState(() {
@@ -270,10 +268,8 @@ class _ProductsGridPageState extends State<ProductsGridPage>
             _isLoading = false;
           });
         }
-      } else {
-      }
-    } catch (e) {
-    }
+      } else {}
+    } catch (e) {}
   }
 
   Future<void> _loadInitialData() async {
@@ -328,8 +324,7 @@ class _ProductsGridPageState extends State<ProductsGridPage>
         print(
             '[ProductsGrid] ⚠️ ProductHiveService not registered, cannot cache');
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   Future<void> _loadMoreData() async {
@@ -343,10 +338,10 @@ class _ProductsGridPageState extends State<ProductsGridPage>
       });
 
       // For now, we'll just set hasMoreData to false since we're not implementing pagination
-        setState(() {
+      setState(() {
         _hasMoreData = false;
-          _isLoading = false;
-        });
+        _isLoading = false;
+      });
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -497,33 +492,33 @@ class _ProductsGridPageState extends State<ProductsGridPage>
                   ),
                   // Stock status badge - only show if stock data is available
                   if (hasStockData)
-                  Positioned(
-                    top: 8,
-                    right: 8,
+                    Positioned(
+                      top: 8,
+                      right: 8,
                       child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
                           color: Colors.blue.withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
                               color: Colors.blue.withOpacity(0.3),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
                         child: const Text(
                           'Stock Available',
                           style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),

@@ -61,15 +61,15 @@ class _LoginPageState extends State<LoginPage> {
 
   String _getUserFriendlyErrorMessage(String error) {
     final errorLower = error.toLowerCase();
-    
+
     // Common error patterns
     if (errorLower.contains('wrong password')) {
       return 'Wrong password';
     } else if (errorLower.contains('invalid phone number or password')) {
       return 'Invalid phone number or password';
-    } else if (errorLower.contains('connection timeout') || 
-               errorLower.contains('connection refused') ||
-               errorLower.contains('database connection failed')) {
+    } else if (errorLower.contains('connection timeout') ||
+        errorLower.contains('connection refused') ||
+        errorLower.contains('database connection failed')) {
       return 'Network error. Please check your internet connection';
     } else if (errorLower.contains('authentication failed')) {
       return 'Authentication failed. Please contact support';

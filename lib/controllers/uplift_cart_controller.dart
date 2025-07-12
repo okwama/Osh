@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
 import 'package:woosh/models/Products_Inventory/product_model.dart';
-import 'package:woosh/models/outlet_model.dart';
+import 'package:woosh/models/client/client_model.dart';
 
 class UpliftCartItem {
   final ProductModel product;
@@ -20,9 +20,9 @@ class UpliftCartController extends GetxController {
   final RxList<UpliftCartItem> items = <UpliftCartItem>[].obs;
   final RxBool isLoading = false.obs;
   final RxString errorMessage = ''.obs;
-  Outlet? currentOutlet;
+  Client? currentOutlet;
 
-  void setOutlet(Outlet outlet) {
+  void setOutlet(Client outlet) {
     currentOutlet = outlet;
   }
 

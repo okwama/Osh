@@ -3,8 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:mysql1/mysql1.dart';
 import 'package:woosh/services/database_service.dart';
 import 'package:woosh/services/database/pagination_service.dart';
-import 'package:woosh/services/core/search_service.dart';
-import 'package:woosh/models/client_model.dart';
+import 'package:woosh/models/client/client_model.dart';
+import 'package:woosh/services/search/index.dart';
 
 /// Query metrics class for performance monitoring
 class QueryMetrics {
@@ -24,7 +24,7 @@ class ClientService {
   ClientService._();
 
   final DatabaseService _db = DatabaseService.instance;
-  final SearchService _searchService = SearchService.instance;
+  final UnifiedSearchService _searchService = UnifiedSearchService.instance;
 
   // Query performance monitoring
   final List<QueryMetrics> _queryMetrics = [];
@@ -391,7 +391,8 @@ class ClientService {
     final results = await _db.query(sql, values);
     stopwatch.stop();
     _logQueryMetrics(sql, results.length, stopwatch);
-    if (_queryCache.length < 50) {
+    if (_queryCache.length < 10000) {
+      // Increased query cache size
       _queryCache[cacheKey] = results;
     }
     return results;
@@ -401,7 +402,8 @@ class ClientService {
   void _logQueryMetrics(String sql, int rowCount, Stopwatch stopwatch) {
     final metrics = QueryMetrics(sql, stopwatch.elapsedMilliseconds, rowCount);
     _queryMetrics.add(metrics);
-    if (_queryMetrics.length > 100) {
+    if (_queryMetrics.length > 10000) {
+      // Increased metrics history
       _queryMetrics.removeAt(0);
     }
   }
