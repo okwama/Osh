@@ -16,7 +16,7 @@ class VisibilityReportService {
     int? userId,
   }) async {
     try {
-      final filterUserId = userId ?? _db.getCurrentUserId();
+      final filterUserId = userId ?? await _db.getCurrentUserId();
 
       // Start transaction
       await _db.query('START TRANSACTION');
@@ -105,7 +105,7 @@ class VisibilityReportService {
     int? userId,
   }) async {
     try {
-      final filterUserId = userId ?? _db.getCurrentUserId();
+      final filterUserId = userId ?? await  _db.getCurrentUserId();
 
       final updates = <String>[];
       final params = <dynamic>[];

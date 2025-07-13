@@ -136,7 +136,7 @@ void _initializeServicesInBackground() {
 Future<void> _initializeProductStockCache() async {
   try {
     // 🚀 FAST CHECK: Only proceed if user is authenticated
-    if (!TokenService.isAuthenticated()) {
+    if (await TokenService.getValidAccessToken() == null) {
       return;
     }
 
@@ -197,9 +197,9 @@ void _processStockStatistics(List<dynamic> products) {
 }
 
 /// Get the initial page based on authentication status
-Widget _getInitialPage(AuthController authController) {
+Future<Widget> _getInitialPage(AuthController authController) async {
   // Check if user is authenticated using TokenService
-  final isAuthenticated = TokenService.isAuthenticated();
+  final isAuthenticated = await TokenService.getValidAccessToken() != null;
 
   if (!isAuthenticated || !authController.isLoggedIn.value) {
     return const LoginPage();
@@ -310,13 +310,34 @@ class MyApp extends StatelessWidget {
                   );
                 } else {
                   // Force proceed after timeout
-                  return _getInitialPage(authController);
+                  return FutureBuilder(
+                    future: _getInitialPage(authController),
+                    builder: (context, pageSnapshot) {
+                      if (pageSnapshot.connectionState ==
+                          ConnectionState.waiting) {
+                        return const Scaffold(
+                          body: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+                      return pageSnapshot.data ?? const LoginPage();
+                    },
+                  );
                 }
               },
             );
           }
 
-          return _getInitialPage(authController);
+          return FutureBuilder(
+            future: _getInitialPage(authController),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                );
+              }
+              return snapshot.data ?? const LoginPage();
+            },
+          );
         } catch (e) {
           // If AuthController is not available, show login page
           return const LoginPage();

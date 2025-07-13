@@ -13,9 +13,9 @@ class DatabaseAuthService {
   final UnifiedDatabaseService _queryExecutor = UnifiedDatabaseService.instance;
 
   /// Get current user ID from JWT token
-  int getCurrentUserId() {
+  Future<int> getCurrentUserId() async {
     try {
-      final token = TokenService.getAccessToken();
+      final token = await TokenService.getValidAccessToken();
       if (token == null) {
         throw Exception('No access token found');
       }
@@ -36,7 +36,7 @@ class DatabaseAuthService {
   /// Get current user details from token
   Future<Map<String, dynamic>> getCurrentUserDetails() async {
     try {
-      final token = TokenService.getAccessToken();
+      final token = await TokenService.getValidAccessToken();
       if (token == null) {
         throw Exception('No access token found');
       }
@@ -187,7 +187,7 @@ class DatabaseAuthService {
   /// Validate token and get user info
   Future<Map<String, dynamic>?> validateToken() async {
     try {
-      final token = TokenService.getAccessToken();
+      final token = await TokenService.getValidAccessToken();
       if (token == null) {
         return null;
       }

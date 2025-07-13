@@ -128,8 +128,8 @@ class DatabaseService {
   }
 
   /// Get current user ID from JWT token
-  int getCurrentUserId() {
-    return _authService.getCurrentUserId();
+  Future<int> getCurrentUserId() async {
+    return await _authService.getCurrentUserId();
   }
 
   /// Get current user details from token

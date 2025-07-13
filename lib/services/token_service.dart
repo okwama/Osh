@@ -1,71 +1,60 @@
-import 'dart:convert';
 import 'package:get_storage/get_storage.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:get/get.dart';
+import 'package:woosh/pages/login/login_page.dart';
+import 'auth_service.dart';
 
-/// Service for managing JWT tokens
 class TokenService {
-  static const String _accessTokenKey = 'access_token';
-  static const String _refreshTokenKey = 'refresh_token';
-  static final _storage = GetStorage();
+  static final GetStorage _storage = GetStorage();
 
-  /// Store access and refresh tokens
-  static Future<void> storeTokens({
-    required String accessToken,
-    required String refreshToken,
-  }) async {
-    await _storage.write(_accessTokenKey, accessToken);
-    await _storage.write(_refreshTokenKey, refreshToken);
+  /// Store tokens after login
+  static Future<void> saveTokens(
+      {required String accessToken, required String refreshToken}) async {
+    await _storage.write('accessToken', accessToken);
+    await _storage.write('refreshToken', refreshToken);
   }
 
-  /// Get access token
-  static String? getAccessToken() {
-    return _storage.read(_accessTokenKey);
-  }
+  /// Get access token (refresh if expired)
+  static Future<String?> getValidAccessToken() async {
+    String? accessToken = _storage.read('accessToken');
+    String? refreshToken = _storage.read('refreshToken');
 
-  /// Get refresh token
-  static String? getRefreshToken() {
-    return _storage.read(_refreshTokenKey);
-  }
-
-  /// Check if token is expired
-  static bool isTokenExpired() {
-    final token = getAccessToken();
-    if (token == null) return true;
-
-    try {
-      return JwtDecoder.isExpired(token);
-    } catch (e) {
-      return true;
+    if (accessToken == null || JwtDecoder.isExpired(accessToken)) {
+      // Try to refresh
+      if (refreshToken == null) {
+        await forceLogout();
+        return null;
+      }
+      final response = await AuthService.refreshToken(refreshToken);
+      if (response['success'] == true) {
+        accessToken = response['accessToken'];
+        await _storage.write('accessToken', accessToken);
+        // Optionally update refreshToken if backend rotates it
+        return accessToken;
+      } else {
+        await forceLogout();
+        return null;
+      }
     }
+    return accessToken;
   }
 
-  /// Clear all tokens
+  /// Add Authorization header to requests
+  static Future<Map<String, String>> getAuthHeaders() async {
+    final token = await getValidAccessToken();
+    if (token == null) throw Exception('Not authenticated');
+    return {'Authorization': 'Bearer $token'};
+  }
+
+  /// Force logout: clear tokens and redirect to login
+  static Future<void> forceLogout() async {
+    await _storage.erase();
+    Get.offAll(() => LoginPage());
+  }
+
+  /// Remove all tokens (manual logout)
   static Future<void> clearTokens() async {
-    await _storage.remove(_accessTokenKey);
-    await _storage.remove(_refreshTokenKey);
+    await _storage.remove('accessToken');
+    await _storage.remove('refreshToken');
   }
-
-  /// Get token payload
-  static Map<String, dynamic>? getTokenPayload() {
-    final token = getAccessToken();
-    if (token == null) return null;
-
-    try {
-      return JwtDecoder.decode(token);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  /// Check if user is authenticated
-  static bool isAuthenticated() {
-    final token = getAccessToken();
-    if (token == null) return false;
-
-    try {
-      return !JwtDecoder.isExpired(token);
-    } catch (e) {
-      return false;
-    }
-  }
-} 
+}

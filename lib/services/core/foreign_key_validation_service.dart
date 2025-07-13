@@ -192,7 +192,7 @@ class ForeignKeyValidationService {
   /// Get current user ID with validation
   static Future<int?> getCurrentUserIdValidated() async {
     try {
-      final userId = _db.getCurrentUserId();
+        final userId = await _db.getCurrentUserId();
       if (userId == null) {
         throw Exception('User not authenticated');
       }

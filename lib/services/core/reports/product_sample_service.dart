@@ -17,7 +17,7 @@ class ProductSampleService {
     int? userId,
   }) async {
     try {
-      final filterUserId = userId ?? _db.getCurrentUserId();
+      final filterUserId = userId ?? await _db.getCurrentUserId();
 
       // Start transaction
       await _db.query('START TRANSACTION');
@@ -121,7 +121,7 @@ class ProductSampleService {
     int? userId,
   }) async {
     try {
-      final filterUserId = userId ?? _db.getCurrentUserId();
+      final filterUserId = userId ?? await _db.getCurrentUserId();
 
       const sql = '''
         UPDATE ProductsSample 
@@ -145,7 +145,7 @@ class ProductSampleService {
     int? userId,
   }) async {
     try {
-      final filterUserId = userId ?? _db.getCurrentUserId();
+      final filterUserId = userId ?? await _db.getCurrentUserId();
 
       const sql = '''
         UPDATE ProductsSampleItem 

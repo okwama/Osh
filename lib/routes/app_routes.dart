@@ -10,41 +10,46 @@ import 'package:woosh/controllers/upliftcontroler/uplift_sale_controller.dart';
 import 'package:woosh/pages/login/sign_page.dart';
 import 'package:woosh/pages/pos/uplift_sales_page.dart';
 import 'package:woosh/pages/test/database_test_page.dart';
+import 'package:woosh/middleware/auth_middleware.dart';
 
 class AppRoutes {
   static final routes = [
-    // Journey Plans Route
+    // Journey Plans Route (Protected)
     GetPage(
       name: '/journeyplans',
       page: () => const JourneyPlansPage(),
       transition: Transition.rightToLeft,
+      middlewares: [AuthMiddleware()],
     ),
-    // Report Routes
+    // Report Routes (Protected)
     GetPage(
       name: '/journey/reports/feedback',
       page: () => FeedbackReportPage(journeyPlan: Get.arguments['journeyPlan']),
       transition: Transition.rightToLeft,
+      middlewares: [AuthMiddleware()],
     ),
     GetPage(
       name: '/journey/reports/product',
       page: () =>
           ProductAvailabilityPage(journeyPlan: Get.arguments['journeyPlan']),
       transition: Transition.rightToLeft,
+      middlewares: [AuthMiddleware()],
     ),
     GetPage(
       name: '/journey/reports/visibility',
       page: () =>
           VisibilityActivityPage(journeyPlan: Get.arguments['journeyPlan']),
       transition: Transition.rightToLeft,
+      middlewares: [AuthMiddleware()],
     ),
-    // Orders Route
+    // Orders Route (Protected)
     GetPage(
       name: '/orders',
       page: () => const ViewOrdersPage(),
       transition: Transition.rightToLeft,
+      middlewares: [AuthMiddleware()],
     ),
-    // Uplift Product Routes
-
+    // Uplift Product Routes (Protected)
     GetPage(
       name: '/uplift/cart',
       page: () => UpliftSaleCartPage(
@@ -54,6 +59,7 @@ class AppRoutes {
         Get.lazyPut<UpliftCartController>(() => UpliftCartController());
       }),
       transition: Transition.rightToLeft,
+      middlewares: [AuthMiddleware()],
     ),
     GetPage(
       name: '/uplift-sales',
@@ -61,17 +67,21 @@ class AppRoutes {
       binding: BindingsBuilder(() {
         Get.lazyPut<UpliftSaleController>(() => UpliftSaleController());
       }),
+      middlewares: [AuthMiddleware()],
     ),
+    // Sign Up Route (Guest only)
     GetPage(
       name: '/sign-up',
       page: () => const SignUpPage(),
       transition: Transition.rightToLeft,
+      middlewares: [GuestMiddleware()],
     ),
-    // Test Routes
+    // Test Routes (Protected)
     GetPage(
       name: '/test/database',
       page: () => const DatabaseTestPage(),
       transition: Transition.rightToLeft,
+      middlewares: [AuthMiddleware()],
     ),
   ];
 }

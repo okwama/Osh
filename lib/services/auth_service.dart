@@ -6,6 +6,8 @@ import 'package:woosh/services/database_service.dart';
 import 'package:woosh/services/token_service.dart';
 import 'package:woosh/services/database/connection_pool.dart';
 import 'package:mysql1/mysql1.dart';
+import 'package:uuid/uuid.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
 
 // 1 is inactive 0 is active
 /// Authentication service using direct database connections
@@ -25,10 +27,10 @@ class AuthService {
       // Get a connection from the pool
       final connection = await ConnectionPool.instance.getConnection();
       try {
-        // Execute login query
+        // First, get user by phone number only (don't compare password in SQL)
         final results = await connection.query(
-          'SELECT * FROM users WHERE phone_number = ? AND password = ?',
-          [phoneNumber, password],
+          'SELECT * FROM SalesRep WHERE phoneNumber = ? AND status = 0',
+          [phoneNumber],
         );
 
         if (results.isEmpty) {
@@ -39,8 +41,41 @@ class AuthService {
         }
 
         final user = results.first;
+        final storedPassword = user.fields['password'];
+
+        // Verify password using BCrypt
+        if (!BCrypt.checkpw(password, storedPassword)) {
+          return {
+            'success': false,
+            'message': 'Invalid phone number or password',
+          };
+        }
+
+        final userId = user.fields['id'];
+
+        // 1. Generate access token (JWT, 5 hours)
+        final accessToken = _generateJwtToken(userId, expiresIn: const Duration(hours: 5));
+        final accessTokenExp = DateTime.now().add(const Duration(hours: 5));
+
+        // 2. Generate refresh token (random string, 7 days)
+        final refreshToken = const Uuid().v4();
+        final refreshTokenExp = DateTime.now().add(const Duration(days: 7));
+
+        // 3. Store both tokens in DB
+        await _db.query(
+          'INSERT INTO Token (token, salesRepId, createdAt, expiresAt, tokenType) VALUES (?, ?, NOW(), ?, ?)',
+          [accessToken, userId, accessTokenExp, 'access']
+        );
+        await _db.query(
+          'INSERT INTO Token (token, salesRepId, createdAt, expiresAt, tokenType) VALUES (?, ?, NOW(), ?, ?)',
+          [refreshToken, userId, refreshTokenExp, 'refresh']
+        );
+
+        // 4. Return both tokens
         return {
           'success': true,
+          'accessToken': accessToken,
+          'refreshToken': refreshToken,
           'user': user,
           'message': 'Login successful',
         };
@@ -252,35 +287,52 @@ class AuthService {
     }
   }
 
-  /// Generate JWT token (simplified version)
-  static Future<String> _generateToken(int userId) async {
+  /// Generate JWT token with custom expiry
+  static String _generateJwtToken(int userId, {required Duration expiresIn}) {
+    // You can use your preferred JWT package and secret
+    // This is a placeholder for actual JWT generation logic
+    final payload = {
+      'userId': userId,
+      'exp': (DateTime.now().add(expiresIn).millisecondsSinceEpoch ~/ 1000),
+    };
+    // Replace with your JWT signing logic
+    return base64Url.encode(utf8.encode(json.encode(payload)));
+  }
+
+  /// Refresh token method
+  static Future<Map<String, dynamic>> refreshToken(String refreshToken) async {
     try {
-      // Get user's countryId from database to include in token
-      final user = await getUserById(userId);
-      if (user == null) {
-        throw Exception('User not found when generating token');
+      // 1. Look up the refresh token in DB
+      final results = await _db.query(
+        'SELECT * FROM Token WHERE token = ? AND tokenType = ? AND blacklisted = 0 AND expiresAt > NOW()',
+        [refreshToken, 'refresh']
+      );
+      if (results.isEmpty) {
+        return {'success': false, 'message': 'Invalid or expired refresh token'};
       }
+      final tokenRow = results.first;
+      final userId = tokenRow.fields['salesRepId'];
 
-      final header = {'alg': 'HS256', 'typ': 'JWT'};
-      final payload = {
-        'userId': userId,
-        'countryId': user.countryId, // Include countryId in token payload
-        'name': user.name,
-        'email': user.email,
-        'role': user.role,
-        'iat': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        'exp': (DateTime.now().add(const Duration(days: 1)))
-                .millisecondsSinceEpoch ~/
-            1000,
+      // 2. Generate new access token (5 hours)
+      final newAccessToken = _generateJwtToken(userId, expiresIn: const Duration(hours: 5));
+      final newAccessTokenExp = DateTime.now().add(const Duration(hours: 5));
+
+      // 3. Store new access token in DB
+      await _db.query(
+        'INSERT INTO Token (token, salesRepId, createdAt, expiresAt, tokenType) VALUES (?, ?, NOW(), ?, ?)',
+        [newAccessToken, userId, newAccessTokenExp, 'access']
+      );
+
+      // 4. Optionally, rotate refresh token (not implemented here)
+
+      return {
+        'success': true,
+        'accessToken': newAccessToken,
+        'refreshToken': refreshToken, // or new one if rotating
       };
-
-      final encodedHeader = _base64UrlEncode(json.encode(header));
-      final encodedPayload = _base64UrlEncode(json.encode(payload));
-      final signature = _generateSignature('$encodedHeader.$encodedPayload');
-
-      return '$encodedHeader.$encodedPayload.$signature';
     } catch (e) {
-      rethrow;
+      print('❌ Refresh token failed: $e');
+      return {'success': false, 'message': 'Refresh token failed'};
     }
   }
 

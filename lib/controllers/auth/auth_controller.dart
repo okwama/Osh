@@ -62,7 +62,7 @@ class AuthController extends GetxController {
 
       if (userData != null && token != null) {
         // Validate token from storage
-        final isValid = TokenService.isAuthenticated();
+        final isValid = await TokenService.getValidAccessToken() != null;
 
         if (isValid) {
           try {
