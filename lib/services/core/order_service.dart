@@ -20,7 +20,7 @@ class OrderService {
   }) async {
     try {
       // Get current user ID for security
-      final currentUserId = _db.getCurrentUserId();
+      final currentUserId = await _db.getCurrentUserId();
 
       String sql = '''
         SELECT 
@@ -80,7 +80,7 @@ class OrderService {
   static Future<MyOrderModel?> getOrderById(int orderId) async {
     try {
       // Get current user ID for security
-      final currentUserId = _db.getCurrentUserId();
+      final currentUserId = await _db.getCurrentUserId();
 
       const sql = '''
         SELECT 
@@ -223,7 +223,7 @@ class OrderService {
     String? imageUrl,
   }) async {
     try {
-      final userId = _db.getCurrentUserId();
+      final userId = await _db.getCurrentUserId();
 
       return await _db.transaction((connection) async {
         // Create the main order
@@ -496,7 +496,7 @@ class OrderService {
       }
 
       // Get current user for security check
-      final currentUserId = _db.getCurrentUserId();
+      final currentUserId = await _db.getCurrentUserId();
       final orderUserId = orderData['userId'] as int;
 
       if (currentUserId != orderUserId) {
@@ -594,7 +594,7 @@ class OrderService {
       final orderData = results.first.fields;
       final status = orderData['status'] as int;
       final orderUserId = orderData['userId'] as int;
-      final currentUserId = _db.getCurrentUserId();
+      final currentUserId = await _db.getCurrentUserId();
 
       // Order must be pending (status = 0) and owned by current user
       return status == 0 && currentUserId == orderUserId;
@@ -633,7 +633,7 @@ class OrderService {
       }
 
       // Get current user for security check
-      final currentUserId = _db.getCurrentUserId();
+      final currentUserId = await _db.getCurrentUserId();
       final orderUserId = orderData['userId'] as int;
 
       if (currentUserId != orderUserId) {
@@ -676,7 +676,7 @@ class OrderService {
   /// Fetch outlets (clients) for the current user
   static Future<List<Map<String, dynamic>>> fetchOutlets() async {
     try {
-      final userId = _db.getCurrentUserId();
+      final userId = await _db.getCurrentUserId();
 
       const sql = '''
         SELECT id, name, contact, address, countryId

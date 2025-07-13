@@ -1,6 +1,6 @@
 import 'package:woosh/models/client/client_model.dart';
 import 'package:woosh/services/core/client_service.dart';
-import 'package:woosh/services/database/auth_service.dart';
+import 'package:woosh/services/auth_service.dart';
 
 /// Global client cache service to reduce redundant database calls
 /// Provides cached client data with automatic refresh when stale
@@ -20,8 +20,7 @@ class ClientCacheService {
 
   /// Get current user's countryId for security filtering
   Future<int> _getCurrentUserCountryId() async {
-    final currentUser =
-        await DatabaseAuthService.instance.getCurrentUserDetails();
+    final currentUser = await AuthService.instance.getCurrentUserDetails();
     final userCountryId = currentUser['countryId'];
 
     if (userCountryId == null) {
@@ -118,7 +117,6 @@ class ClientCacheService {
 
       return filteredClients;
     } catch (e) {
-
       // Return cached data if available, even if stale
       if (_cachedClientsByCountry[userCountryId] != null) {
         print(
@@ -149,7 +147,7 @@ class ClientCacheService {
     _isLoadingByCountry.clear();
   }
 
-  /// Get cache status  
+  /// Get cache status
   Future<Map<String, dynamic>> getCacheStatus() async {
     final userCountryId = await _getCurrentUserCountryId();
     return {

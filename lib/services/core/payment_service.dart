@@ -9,7 +9,6 @@ class PaymentService {
   /// Get client payments
   static Future<List<ClientPayment>> getClientPayments(int clientId) async {
     try {
-
       const sql = '''
         SELECT 
           cp.id,
@@ -42,7 +41,6 @@ class PaymentService {
     List<int>? imageBytes,
   }) async {
     try {
-
       // For now, we'll create a simple payment record without image upload
       // In a real implementation, you'd handle image upload to a storage service
       const sql = '''
@@ -53,7 +51,7 @@ class PaymentService {
 
       final params = [
         clientId,
-        _db.getCurrentUserId(),
+        await _db.getCurrentUserId(),
         amount,
         method,
         'PENDING', // Default status
@@ -81,7 +79,6 @@ class PaymentService {
   /// Get a specific payment by ID
   static Future<ClientPayment?> getClientPaymentById(int paymentId) async {
     try {
-
       const sql = '''
         SELECT 
           cp.id,
@@ -113,7 +110,6 @@ class PaymentService {
     required String status,
   }) async {
     try {
-
       const sql = '''
         UPDATE ClientPayment 
         SET status = ? 
@@ -137,7 +133,6 @@ class PaymentService {
   static Future<Map<String, dynamic>> getClientPaymentStats(
       int clientId) async {
     try {
-
       const sql = '''
         SELECT 
           COUNT(*) as total_payments,

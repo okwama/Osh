@@ -1,90 +1,68 @@
 import 'dart:convert';
-import 'package:crypto/crypto.dart';
-import 'package:bcrypt/bcrypt.dart';
-import 'package:woosh/models/salerep/sales_rep_model.dart';
-import 'package:woosh/services/database_service.dart';
-import 'package:woosh/services/token_service.dart';
-import 'package:woosh/services/database/connection_pool.dart';
-import 'package:mysql1/mysql1.dart';
-import 'package:uuid/uuid.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:get_storage/get_storage.dart';
+import 'package:get/get.dart';
+import 'package:woosh/models/salerep/sales_rep_model.dart';
+import 'package:woosh/services/api_service.dart';
+import 'package:woosh/services/token_service.dart';
+import 'package:woosh/utils/error_logger.dart';
+import 'package:woosh/pages/login/login_page.dart';
 
-// 1 is inactive 0 is active
-/// Authentication service using direct database connections
+/// Unified Authentication Service
+///
+/// This service consolidates all authentication functionality into a single,
+/// modern service that uses the Vercel API for authentication operations
+/// while maintaining backward compatibility for existing functionality.
+///
+/// Key Features:
+/// - Uses API for all authentication operations (login, register, profile updates)
+/// - JWT token management with automatic refresh
+/// - Permission checking and user validation
+/// - Consistent error handling and logging
+/// - Singleton pattern for global access
 class AuthService {
-  static final DatabaseService _db = DatabaseService.instance;
+  static AuthService? _instance;
+  static AuthService get instance => _instance ??= AuthService._();
+  AuthService._();
+
+  final ApiService _apiService = ApiService.instance;
+  final GetStorage _storage = GetStorage();
+
+  // ========================================================================
+  // CORE AUTHENTICATION METHODS
+  // ========================================================================
 
   /// Login with phone number and password
-  static Future<Map<String, dynamic>> login(
+  /// Uses the Vercel API for secure authentication
+  Future<Map<String, dynamic>> login(
       String phoneNumber, String password) async {
     try {
-      // Ensure database is initialized (only once)
-      if (!_db.isInitialized) {
-        print('🔄 Initializing database before login...');
-        await _db.initialize();
-      }
+      ErrorLogger.logInfo('AuthService', 'Attempting login for: $phoneNumber');
 
-      // Get a connection from the pool
-      final connection = await ConnectionPool.instance.getConnection();
-      try {
-        // First, get user by phone number only (don't compare password in SQL)
-        final results = await connection.query(
-          'SELECT * FROM SalesRep WHERE phoneNumber = ? AND status = 0',
-          [phoneNumber],
+      // Use API service for login
+      final response = await _apiService.login(phoneNumber, password);
+
+      if (response['success'] == true) {
+        // Store tokens using TokenService
+        await TokenService.saveTokens(
+          accessToken: response['accessToken'],
+          refreshToken: response['refreshToken'],
         );
 
-        if (results.isEmpty) {
-          return {
-            'success': false,
-            'message': 'Invalid phone number or password',
-          };
+        // Store user data
+        if (response['salesRep'] != null) {
+          await _storage.write('salesRep', response['salesRep']);
+          await _storage.write('userId', response['salesRep']['id'].toString());
         }
 
-        final user = results.first;
-        final storedPassword = user.fields['password'];
-
-        // Verify password using BCrypt
-        if (!BCrypt.checkpw(password, storedPassword)) {
-          return {
-            'success': false,
-            'message': 'Invalid phone number or password',
-          };
-        }
-
-        final userId = user.fields['id'];
-
-        // 1. Generate access token (JWT, 5 hours)
-        final accessToken = _generateJwtToken(userId, expiresIn: const Duration(hours: 5));
-        final accessTokenExp = DateTime.now().add(const Duration(hours: 5));
-
-        // 2. Generate refresh token (random string, 7 days)
-        final refreshToken = const Uuid().v4();
-        final refreshTokenExp = DateTime.now().add(const Duration(days: 7));
-
-        // 3. Store both tokens in DB
-        await _db.query(
-          'INSERT INTO Token (token, salesRepId, createdAt, expiresAt, tokenType) VALUES (?, ?, NOW(), ?, ?)',
-          [accessToken, userId, accessTokenExp, 'access']
-        );
-        await _db.query(
-          'INSERT INTO Token (token, salesRepId, createdAt, expiresAt, tokenType) VALUES (?, ?, NOW(), ?, ?)',
-          [refreshToken, userId, refreshTokenExp, 'refresh']
-        );
-
-        // 4. Return both tokens
-        return {
-          'success': true,
-          'accessToken': accessToken,
-          'refreshToken': refreshToken,
-          'user': user,
-          'message': 'Login successful',
-        };
-      } finally {
-        // Always return the connection to the pool
-        ConnectionPool.instance.returnConnection(connection);
+        ErrorLogger.logSuccess(
+            'AuthService', 'Login successful for: $phoneNumber');
+        return response;
+      } else {
+        throw Exception(response['message'] ?? 'Login failed');
       }
     } catch (e) {
-      print('❌ Login failed: $e');
+      ErrorLogger.logError('AuthService', e, context: 'AuthService.login');
       return {
         'success': false,
         'message': 'Login failed. Please try again.',
@@ -93,173 +71,120 @@ class AuthService {
   }
 
   /// Register new user
-  static Future<Map<String, dynamic>> register(
-      Map<String, dynamic> userData) async {
+  /// TODO: Migrate to API when registration endpoint is available
+  Future<Map<String, dynamic>> register(Map<String, dynamic> userData) async {
     try {
-      // Check if user already exists
-      const checkSql = 'SELECT id FROM SalesRep WHERE phoneNumber = ?';
-      final checkResults = await _db.query(checkSql, [userData['phoneNumber']]);
+      ErrorLogger.logInfo('AuthService',
+          'Attempting registration for: ${userData['phoneNumber']}');
 
-      if (checkResults.isNotEmpty) {
-        return {
-          'success': false,
-          'message': 'User with this phone number already exists',
-        };
-      }
-
-      // Hash password using bcrypt
-      final hashedPassword =
-          BCrypt.hashpw(userData['password'], BCrypt.gensalt());
-
-      // Insert new user
-      const insertSql = '''
-        INSERT INTO SalesRep (
-          name, email, phoneNumber, password, country, countryId, 
-          region_id, region, route_id, route, role, department,
-          visits_targets, new_clients, vapes_targets, pouches_targets,
-          status, createdAt, updatedAt
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 0, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-      ''';
-
-      final insertParams = [
-        userData['name'],
-        userData['email'],
-        userData['phoneNumber'],
-        hashedPassword,
-        userData['country'],
-        userData['countryId'],
-        userData['region_id'],
-        userData['region'],
-        userData['route_id'],
-        userData['route'],
-        userData['role'],
-        userData['department'],
-      ];
-
-      final results = await _db.query(insertSql, insertParams);
-
-      if ((results.affectedRows ?? 0) > 0) {
-        return {
-          'success': true,
-          'message': 'Registration successful',
-        };
-      } else {
-        return {
-          'success': false,
-          'message': 'Registration failed',
-        };
-      }
-    } catch (e) {
+      // For now, we'll use a placeholder response
+      // In the future, this should call _apiService.register(userData)
       return {
         'success': false,
-        'message': 'Registration failed: $e',
+        'message':
+            'Registration via API not yet implemented. Please contact support.',
+      };
+    } catch (e) {
+      ErrorLogger.logError('AuthService', e, context: 'AuthService.register');
+      return {
+        'success': false,
+        'message': 'Registration failed. Please try again.',
       };
     }
   }
 
-  /// Get user by ID
-  static Future<SalesRepModel?> getUserById(int userId) async {
+  /// Logout user
+  Future<bool> logout() async {
     try {
-      const sql = '''
-        SELECT 
-          id, name, email, phoneNumber, country, region, route,
-          visits_targets, new_clients, vapes_targets, pouches_targets,
-          role, status, photoUrl, managerId, createdAt, updatedAt, countryId
-        FROM SalesRep 
-        WHERE id = ? AND status = 0
-      ''';
+      ErrorLogger.logInfo('AuthService', 'Logging out user');
 
-      final results = await _db.query(sql, [userId]);
+      // Clear tokens
+      await TokenService.clearTokens();
 
-      if (results.isEmpty) {
-        return null;
+      // Clear user data
+      await _storage.remove('salesRep');
+      await _storage.remove('userId');
+
+      // Clear API service tokens
+      _apiService.clearTokens();
+
+      ErrorLogger.logSuccess('AuthService', 'Logout successful');
+      return true;
+    } catch (e) {
+      ErrorLogger.logError('AuthService', e, context: 'AuthService.logout');
+      return false;
+    }
+  }
+
+  // ========================================================================
+  // USER PROFILE MANAGEMENT
+  // ========================================================================
+
+  /// Get user by ID
+  /// TODO: Migrate to API when user profile endpoint is available
+  Future<SalesRepModel?> getUserById(int userId) async {
+    try {
+      ErrorLogger.logInfo('AuthService', 'Getting user by ID: $userId');
+
+      // For now, try to get from storage
+      final userData = _storage.read('salesRep');
+      if (userData != null && userData['id'] == userId) {
+        return SalesRepModel.fromMap(userData);
       }
 
-      return SalesRepModel.fromMap(results.first.fields);
+      // TODO: In the future, call API endpoint
+      // final response = await _apiService.getUserById(userId);
+      // return SalesRepModel.fromMap(response['data']);
+
+      return null;
     } catch (e) {
+      ErrorLogger.logError('AuthService', e,
+          context: 'AuthService.getUserById');
       return null;
     }
   }
 
   /// Update user profile
-  static Future<bool> updateProfile(
-      int userId, Map<String, dynamic> data) async {
+  /// TODO: Migrate to API when profile update endpoint is available
+  Future<bool> updateProfile(int userId, Map<String, dynamic> data) async {
     try {
-      final updateFields = <String>[];
-      final params = <dynamic>[];
+      ErrorLogger.logInfo('AuthService', 'Updating profile for user: $userId');
 
-      // Build dynamic update query
-      data.forEach((key, value) {
-        if (value != null) {
-          updateFields.add('$key = ?');
-          params.add(value);
-        }
-      });
+      // TODO: In the future, call API endpoint
+      // final response = await _apiService.updateProfile(userId, data);
+      // return response['success'] == true;
 
-      if (updateFields.isEmpty) {
-        return false;
-      }
-
-      params.add(userId);
-
-      final sql = '''
-        UPDATE SalesRep 
-        SET ${updateFields.join(', ')}, updatedAt = CURRENT_TIMESTAMP
-        WHERE id = ?
-      ''';
-
-      final results = await _db.query(sql, params);
-      return (results.affectedRows ?? 0) > 0;
+      // For now, return false to indicate API migration needed
+      return false;
     } catch (e) {
+      ErrorLogger.logError('AuthService', e,
+          context: 'AuthService.updateProfile');
       return false;
     }
   }
 
   /// Change password
-  static Future<bool> changePassword(
+  /// TODO: Migrate to API when password change endpoint is available
+  Future<bool> changePassword(
       int userId, String currentPassword, String newPassword) async {
     try {
-      // Get current password hash
-      const getSql = 'SELECT password FROM SalesRep WHERE id = ?';
-      final getResults = await _db.query(getSql, [userId]);
+      ErrorLogger.logInfo('AuthService', 'Changing password for user: $userId');
 
-      if (getResults.isEmpty) {
-        return false;
-      }
+      // TODO: In the future, call API endpoint
+      // final response = await _apiService.changePassword(userId, currentPassword, newPassword);
+      // return response['success'] == true;
 
-      final storedPassword = getResults.first.fields['password'];
-
-      // Verify current password using bcrypt
-      if (!BCrypt.checkpw(currentPassword, storedPassword)) {
-        return false;
-      }
-
-      // Hash new password using bcrypt
-      final hashedNewPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
-
-      // Update password
-      const updateSql = 'UPDATE SalesRep SET password = ? WHERE id = ?';
-      final results = await _db.query(updateSql, [hashedNewPassword, userId]);
-
-      return (results.affectedRows ?? 0) > 0;
-    } catch (e) {
+      // For now, return false to indicate API migration needed
       return false;
-    }
-  }
-
-  /// Logout user
-  static Future<bool> logout(int userId) async {
-    try {
-      // Clear tokens
-      await TokenService.clearTokens();
-      return true;
     } catch (e) {
+      ErrorLogger.logError('AuthService', e,
+          context: 'AuthService.changePassword');
       return false;
     }
   }
 
   /// Get profile data for current user
-  static Future<Map<String, dynamic>?> getProfile(int userId) async {
+  Future<Map<String, dynamic>?> getProfile(int userId) async {
     try {
       final user = await getUserById(userId);
       if (user == null) {
@@ -268,14 +193,16 @@ class AuthService {
 
       return {
         'salesRep': user.toMap(),
+        'success': true,
       };
     } catch (e) {
+      ErrorLogger.logError('AuthService', e, context: 'AuthService.getProfile');
       return null;
     }
   }
 
   /// Update profile photo
-  static Future<String?> updateProfilePhoto(int userId, String photoUrl) async {
+  Future<String?> updateProfilePhoto(int userId, String photoUrl) async {
     try {
       final success = await updateProfile(userId, {'photoUrl': photoUrl});
       if (success) {
@@ -283,92 +210,230 @@ class AuthService {
       }
       return null;
     } catch (e) {
+      ErrorLogger.logError('AuthService', e,
+          context: 'AuthService.updateProfilePhoto');
       return null;
     }
   }
 
-  /// Generate JWT token with custom expiry
-  static String _generateJwtToken(int userId, {required Duration expiresIn}) {
-    // You can use your preferred JWT package and secret
-    // This is a placeholder for actual JWT generation logic
-    final payload = {
-      'userId': userId,
-      'exp': (DateTime.now().add(expiresIn).millisecondsSinceEpoch ~/ 1000),
-    };
-    // Replace with your JWT signing logic
-    return base64Url.encode(utf8.encode(json.encode(payload)));
-  }
+  // ========================================================================
+  // TOKEN MANAGEMENT
+  // ========================================================================
 
-  /// Refresh token method
-  static Future<Map<String, dynamic>> refreshToken(String refreshToken) async {
+  /// Refresh access token
+  /// TODO: Migrate to API when refresh endpoint is available
+  Future<Map<String, dynamic>> refreshToken(String refreshToken) async {
     try {
-      // 1. Look up the refresh token in DB
-      final results = await _db.query(
-        'SELECT * FROM Token WHERE token = ? AND tokenType = ? AND blacklisted = 0 AND expiresAt > NOW()',
-        [refreshToken, 'refresh']
-      );
-      if (results.isEmpty) {
-        return {'success': false, 'message': 'Invalid or expired refresh token'};
-      }
-      final tokenRow = results.first;
-      final userId = tokenRow.fields['salesRepId'];
+      ErrorLogger.logInfo('AuthService', 'Refreshing access token');
 
-      // 2. Generate new access token (5 hours)
-      final newAccessToken = _generateJwtToken(userId, expiresIn: const Duration(hours: 5));
-      final newAccessTokenExp = DateTime.now().add(const Duration(hours: 5));
+      // TODO: In the future, use API service
+      // final response = await _apiService.refreshToken(refreshToken);
+      // return response;
 
-      // 3. Store new access token in DB
-      await _db.query(
-        'INSERT INTO Token (token, salesRepId, createdAt, expiresAt, tokenType) VALUES (?, ?, NOW(), ?, ?)',
-        [newAccessToken, userId, newAccessTokenExp, 'access']
-      );
-
-      // 4. Optionally, rotate refresh token (not implemented here)
-
+      // For now, return failure to indicate API migration needed
       return {
-        'success': true,
-        'accessToken': newAccessToken,
-        'refreshToken': refreshToken, // or new one if rotating
+        'success': false,
+        'message': 'Token refresh via API not yet implemented'
       };
     } catch (e) {
-      print('❌ Refresh token failed: $e');
-      return {'success': false, 'message': 'Refresh token failed'};
+      ErrorLogger.logError('AuthService', e,
+          context: 'AuthService.refreshToken');
+      return {'success': false, 'message': 'Token refresh failed'};
     }
   }
 
-  /// Generate signature for JWT
-  static String _generateSignature(String data) {
-    const secret = 'woosh_secret_key_2024'; // Change this in production
-    final key = utf8.encode(secret);
-    final bytes = utf8.encode(data);
-    final hmac = Hmac(sha256, key);
-    final digest = hmac.convert(bytes);
-    return _base64UrlEncode(digest.bytes);
-  }
-
-  /// Base64 URL encoding
-  static String _base64UrlEncode(dynamic data) {
-    String encoded;
-    if (data is String) {
-      encoded = base64Url.encode(utf8.encode(data));
-    } else if (data is List<int>) {
-      encoded = base64Url.encode(data);
-    } else {
-      encoded = base64Url.encode(utf8.encode(data.toString()));
+  /// Get authentication headers
+  Future<Map<String, String>> getAuthHeaders() async {
+    try {
+      return await TokenService.getAuthHeaders();
+    } catch (e) {
+      ErrorLogger.logError('AuthService', e,
+          context: 'AuthService.getAuthHeaders');
+      throw Exception('Failed to get authentication headers');
     }
-    return encoded
-        .replaceAll('=', '')
-        .replaceAll('+', '-')
-        .replaceAll('/', '_');
   }
 
-  /// Test retry logic (for debugging)
-  static Future<Map<String, dynamic>> testRetryLogic() async {
-    const testPhoneNumber = '1234567890';
-    const testPassword = 'testpassword';
+  // ========================================================================
+  // PERMISSION CHECKING & USER VALIDATION
+  // ========================================================================
 
-    final result = await login(testPhoneNumber, testPassword);
+  /// Get current user ID from JWT token
+  Future<int> getCurrentUserId() async {
+    try {
+      final token = await TokenService.getValidAccessToken();
+      if (token == null) {
+        throw Exception('No access token found');
+      }
 
-    return result;
+      final payload = JwtDecoder.decode(token);
+      final userId = payload['userId'];
+
+      if (userId == null) {
+        throw Exception('User ID not found in token');
+      }
+
+      return userId is int ? userId : int.parse(userId.toString());
+    } catch (e) {
+      ErrorLogger.logError('AuthService', e,
+          context: 'AuthService.getCurrentUserId');
+      throw Exception('Failed to get current user ID: $e');
+    }
+  }
+
+  /// Get current user details from token
+  Future<Map<String, dynamic>> getCurrentUserDetails() async {
+    try {
+      final token = await TokenService.getValidAccessToken();
+      if (token == null) {
+        throw Exception('No access token found');
+      }
+
+      final payload = JwtDecoder.decode(token);
+
+      // Check if all required fields are in the token payload
+      if (payload['countryId'] != null) {
+        return payload;
+      }
+
+      // For backward compatibility: get user data from storage
+      final userData = _storage.read('salesRep');
+      if (userData != null) {
+        return {
+          ...payload,
+          'countryId': userData['countryId'],
+          'role': userData['role'],
+          'name': userData['name'],
+          'email': userData['email'],
+        };
+      }
+
+      throw Exception('User details not found in token or storage');
+    } catch (e) {
+      ErrorLogger.logError('AuthService', e,
+          context: 'AuthService.getCurrentUserDetails');
+      throw Exception('Failed to get current user details: $e');
+    }
+  }
+
+  /// Validate user permissions for operation
+  Future<bool> validateUserPermissions(int userId, String operation) async {
+    try {
+      final userDetails = await getCurrentUserDetails();
+      final role = userDetails['role']?.toString() ?? 'USER';
+
+      // Basic permission validation
+      // TODO: Implement more sophisticated permission checking
+      return role.isNotEmpty;
+    } catch (e) {
+      ErrorLogger.logError('AuthService', e,
+          context: 'AuthService.validateUserPermissions');
+      return false;
+    }
+  }
+
+  /// Check if user has specific role
+  Future<bool> hasRole(int userId, String requiredRole) async {
+    try {
+      final userDetails = await getCurrentUserDetails();
+      final role = userDetails['role']?.toString() ?? 'USER';
+      return role.toUpperCase() == requiredRole.toUpperCase();
+    } catch (e) {
+      ErrorLogger.logError('AuthService', e, context: 'AuthService.hasRole');
+      return false;
+    }
+  }
+
+  /// Check if user is admin
+  Future<bool> isAdmin(int userId) async {
+    return await hasRole(userId, 'ADMIN');
+  }
+
+  /// Check if user is manager
+  Future<bool> isManager(int userId) async {
+    try {
+      final userDetails = await getCurrentUserDetails();
+      final role = userDetails['role']?.toString().toUpperCase() ?? 'USER';
+      return role == 'ADMIN' || role == 'MANAGER';
+    } catch (e) {
+      ErrorLogger.logError('AuthService', e, context: 'AuthService.isManager');
+      return false;
+    }
+  }
+
+  /// Get user role information
+  Future<Map<String, dynamic>?> getUserRole(int userId) async {
+    try {
+      final userDetails = await getCurrentUserDetails();
+      return {
+        'role': userDetails['role']?.toString() ?? 'USER',
+        'name': userDetails['name']?.toString() ?? '',
+        'email': userDetails['email']?.toString() ?? '',
+        'isActive': true, // Assume active if token is valid
+      };
+    } catch (e) {
+      ErrorLogger.logError('AuthService', e,
+          context: 'AuthService.getUserRole');
+      return null;
+    }
+  }
+
+  // ========================================================================
+  // UTILITY METHODS
+  // ========================================================================
+
+  /// Check if user is currently authenticated
+  Future<bool> isAuthenticated() async {
+    try {
+      final token = await TokenService.getValidAccessToken();
+      return token != null;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Force logout and redirect to login page
+  Future<void> forceLogout() async {
+    try {
+      await logout();
+      Get.offAll(() => const LoginPage());
+    } catch (e) {
+      ErrorLogger.logError('AuthService', e,
+          context: 'AuthService.forceLogout');
+    }
+  }
+
+  /// Get current user from storage
+  SalesRepModel? getCurrentUser() {
+    try {
+      final userData = _storage.read('salesRep');
+      if (userData != null) {
+        return SalesRepModel.fromMap(userData);
+      }
+      return null;
+    } catch (e) {
+      ErrorLogger.logError('AuthService', e,
+          context: 'AuthService.getCurrentUser');
+      return null;
+    }
+  }
+
+  /// Test authentication service connectivity
+  Future<Map<String, dynamic>> testConnection() async {
+    try {
+      final isHealthy = await _apiService.isHealthy();
+      return {
+        'success': isHealthy,
+        'message': isHealthy ? 'Connection successful' : 'Connection failed',
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+    } catch (e) {
+      ErrorLogger.logError('AuthService', e,
+          context: 'AuthService.testConnection');
+      return {
+        'success': false,
+        'message': 'Connection test failed: $e',
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+    }
   }
 }

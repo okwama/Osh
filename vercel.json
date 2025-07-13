@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "functions": {
+    "api/**/*.js": {
+      "maxDuration": 30
+    }
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        }
+      ]
+    }
+  ],
+  "env": {
+    "DB_HOST": "102.218.215.35",
+    "DB_USER": "citlogis_bryan",
+    "DB_PASSWORD": "@bo9511221.qwerty",
+    "DB_NAME": "citlogis_ws",
+    "DB_PORT": "3306",
+    "JWT_SECRET": "14d654d54283e592a412c2de2cc40b439c6d63fc9406e270650201b5aba6a73f99a345341694cc5bb5a3e09ff85ccb49ce7f49f2e89a9362ea61fc9558968c47"
+  }
+} 

@@ -11,6 +11,7 @@ import 'package:woosh/pages/login/sign_page.dart';
 import 'package:woosh/pages/pos/uplift_sales_page.dart';
 import 'package:woosh/pages/test/database_test_page.dart';
 import 'package:woosh/middleware/auth_middleware.dart';
+import 'package:woosh/app_update.dart';
 
 class AppRoutes {
   static final routes = [
@@ -82,6 +83,12 @@ class AppRoutes {
       page: () => const DatabaseTestPage(),
       transition: Transition.rightToLeft,
       middlewares: [AuthMiddleware()],
+    ),
+    // App Update Route (No middleware - accessible to all)
+    GetPage(
+      name: '/app-update',
+      page: () => const UpdateWidget(),
+      transition: Transition.fadeIn,
     ),
   ];
 }

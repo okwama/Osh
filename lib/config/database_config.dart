@@ -2,6 +2,9 @@ class DatabaseConfig {
   // ⚠️ SECURITY WARNING: For production, use environment variables or secure storage
   // Current implementation exposes credentials in code - NOT RECOMMENDED for production
 
+  // API Settings - New secure approach
+  static const String apiUrl = 'https://vercel-server-rho-two.vercel.app/api';
+
   // Database Settings - Use environment variables in production
   static const String host = '102.218.215.35';
   static const String user = 'citlogis_bryan';

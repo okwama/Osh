@@ -63,7 +63,7 @@ class JourneyPlanService {
       List<dynamic> params = [];
 
       // Filter by user if provided, otherwise use current user
-      final filterUserId = userId ?? _db.getCurrentUserId();
+      final filterUserId = userId ?? await _db.getCurrentUserId();
       sql += ' AND jp.userId = ?';
       params.add(filterUserId);
 
@@ -270,7 +270,7 @@ class JourneyPlanService {
     int? userId,
   }) async {
     try {
-      final filterUserId = userId ?? _db.getCurrentUserId();
+      final filterUserId = userId ?? await _db.getCurrentUserId();
 
       const sql = '''
         INSERT INTO JourneyPlan (

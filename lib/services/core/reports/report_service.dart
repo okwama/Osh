@@ -46,7 +46,7 @@ class ReportService {
       }
 
       // Filter by user (default to current user if not specified)
-      final filterUserId = userId ?? _db.getCurrentUserId();
+      final filterUserId = userId ?? await _db.getCurrentUserId();
       sql += ' AND r.userId = ?';
       params.add(filterUserId);
 

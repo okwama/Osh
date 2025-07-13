@@ -6,6 +6,7 @@ import 'package:woosh/services/database/pagination_service.dart';
 import 'package:woosh/services/database/auth_service.dart';
 import 'package:woosh/utils/error_handler.dart';
 import 'package:woosh/utils/error_logger.dart';
+import 'package:woosh/services/api_service.dart';
 
 /// Core database service facade that coordinates between specialized services
 /// Provides a unified interface for database operations
@@ -44,33 +45,45 @@ class DatabaseService {
   /// Execute a query with automatic connection management and error handling
   Future<Results> query(String sql, [List<Object?>? values]) async {
     try {
+      // Try API first (new secure approach)
+      final apiResults = await ApiService.instance.query(sql, values);
+      // For now, fallback to direct DB since API returns different format
+      // TODO: Implement proper conversion from API results to mysql1 Results
       return await _queryExecutor.execute(sql, values);
     } catch (e) {
-      // Handle socket connection issues
-      if (e.toString().contains('Socket has been closed') ||
-          e.toString().contains('SocketException')) {
-        ErrorLogger.logWarning('Database Connection',
-            'Socket connection issue detected, attempting recovery...',
-            context: 'DatabaseService.query');
+      ErrorLogger.logWarning(
+          'API Service', 'API failed, falling back to direct DB: $e');
 
-        // Try to reinitialize the connection pool
-        try {
-          await _connectionPool.dispose();
-          await _connectionPool.initialize();
-          ErrorLogger.logSuccess('Database Connection',
-              'Connection pool reinitialized successfully');
+      // Fallback to direct database connection
+      try {
+        return await _queryExecutor.execute(sql, values);
+      } catch (dbError) {
+        // Handle socket connection issues
+        if (dbError.toString().contains('Socket has been closed') ||
+            dbError.toString().contains('SocketException')) {
+          ErrorLogger.logWarning('Database Connection',
+              'Socket connection issue detected, attempting recovery...',
+              context: 'DatabaseService.query');
 
-          // Retry the query once
-          return await _queryExecutor.execute(sql, values);
-        } catch (retryError) {
-          ErrorLogger.logError('Database Recovery', retryError,
-              context: 'DatabaseService.query.recovery');
-          throw Exception(
-              'Database connection failed after recovery attempt: $e');
+          // Try to reinitialize the connection pool
+          try {
+            await _connectionPool.dispose();
+            await _connectionPool.initialize();
+            ErrorLogger.logSuccess('Database Connection',
+                'Connection pool reinitialized successfully');
+
+            // Retry the query once
+            return await _queryExecutor.execute(sql, values);
+          } catch (retryError) {
+            ErrorLogger.logError('Database Recovery', retryError,
+                context: 'DatabaseService.query.recovery');
+            throw Exception(
+                'Database connection failed after recovery attempt: $dbError');
+          }
         }
-      }
 
-      rethrow;
+        rethrow;
+      }
     }
   }
 

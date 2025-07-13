@@ -208,10 +208,7 @@ class HomeController extends GetxController {
   /// Logout user
   Future<void> logout() async {
     try {
-      final userId = _storage.read<String>('userId');
-      if (userId != null) {
-        await AuthService.logout(int.parse(userId));
-      }
+      await AuthService.instance.logout();
       Get.offAllNamed('/login');
     } catch (e) {
       ErrorHandler.handleGeneralError(e,

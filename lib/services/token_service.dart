@@ -25,7 +25,7 @@ class TokenService {
         await forceLogout();
         return null;
       }
-      final response = await AuthService.refreshToken(refreshToken);
+      final response = await AuthService.instance.refreshToken(refreshToken);
       if (response['success'] == true) {
         accessToken = response['accessToken'];
         await _storage.write('accessToken', accessToken);

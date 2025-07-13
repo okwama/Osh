@@ -1,7 +1,7 @@
 import 'package:woosh/models/client/client_model.dart';
 import 'package:woosh/services/database/pagination_service.dart';
 import 'package:woosh/services/database/unified_database_service.dart';
-import 'package:woosh/services/database/auth_service.dart';
+import 'package:woosh/services/auth_service.dart';
 
 /// Repository pattern implementation for Client data access
 /// Abstracts database operations from controllers
@@ -26,8 +26,7 @@ class ClientRepository {
   }) async {
     try {
       // Get current user's countryId for mandatory security filtering
-      final currentUser =
-          await DatabaseAuthService.instance.getCurrentUserDetails();
+      final currentUser = await AuthService.instance.getCurrentUserDetails();
       final userCountryId = currentUser['countryId'];
 
       if (userCountryId == null) {
@@ -92,8 +91,7 @@ class ClientRepository {
   Future<Client?> getClientById(int id) async {
     try {
       // Get current user's countryId for security filtering
-      final currentUser =
-          await DatabaseAuthService.instance.getCurrentUserDetails();
+      final currentUser = await AuthService.instance.getCurrentUserDetails();
       final userCountryId = currentUser['countryId'];
 
       if (userCountryId == null) {
@@ -152,8 +150,7 @@ class ClientRepository {
   Future<Client> updateClient(Client client) async {
     try {
       // Get current user's countryId for security filtering
-      final currentUser =
-          await DatabaseAuthService.instance.getCurrentUserDetails();
+      final currentUser = await AuthService.instance.getCurrentUserDetails();
       final userCountryId = currentUser['countryId'];
 
       if (userCountryId == null) {
@@ -188,7 +185,7 @@ class ClientRepository {
     try {
       // Get current user's countryId for security filtering
       final currentUser =
-          await DatabaseAuthService.instance.getCurrentUserDetails();
+          await AuthService.instance.getCurrentUserDetails();
       final userCountryId = currentUser['countryId'];
 
       if (userCountryId == null) {
@@ -211,7 +208,7 @@ class ClientRepository {
     try {
       // Get current user's countryId for security filtering
       final currentUser =
-          await DatabaseAuthService.instance.getCurrentUserDetails();
+          await AuthService.instance.getCurrentUserDetails();
       final userCountryId = currentUser['countryId'];
 
       if (userCountryId == null) {

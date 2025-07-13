@@ -72,7 +72,6 @@ class CurrencyConfigService {
         }
       }
 
-
       // Get all countries from database
       const sql = '''
         SELECT 
@@ -121,7 +120,7 @@ class CurrencyConfigService {
   /// Get currency configuration for current user's country
   static Future<CurrencyConfig?> getCurrentUserCurrencyConfig() async {
     try {
-      final userId = _db.getCurrentUserId();
+      final userId = await _db.getCurrentUserId();
 
       const sql = 'SELECT countryId FROM SalesRep WHERE id = ?';
       final results = await _db.query(sql, [userId]);

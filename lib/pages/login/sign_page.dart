@@ -167,7 +167,7 @@ class _SignUpPageState extends State<SignUpPage> {
             _selectedRole == 'MANAGER' ? _departmentController.text : null,
       };
 
-      final response = await AuthService.register(userData);
+      final response = await AuthService.instance.register(userData);
 
       if (response['success']) {
         _showToast('Account created successfully!', false);

@@ -213,7 +213,7 @@ class ClientService {
   Future<Client?> getClientById(int clientId) async {
     try {
       // Get current user's countryId for security filtering
-      final currentUserId = _db.getCurrentUserId();
+      final currentUserId = await _db.getCurrentUserId();
       final currentUser = await _db.getCurrentUserDetails();
       final userCountryId = currentUser['countryId'];
 
@@ -236,7 +236,7 @@ class ClientService {
   Future<Client> createClient(Client client) async {
     try {
       // Get current user ID for audit trail
-      final currentUserId = _db.getCurrentUserId();
+      final currentUserId = await _db.getCurrentUserId();
 
       final results = await _db.query(
         '''

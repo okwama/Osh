@@ -90,11 +90,12 @@ class AuthController extends GetxController {
         await _initializeDatabase();
       }
 
-      final result = await AuthService.login(phoneNumber, password);
+      final result = await AuthService.instance.login(phoneNumber, password);
 
       if (result['success'] == true && result['salesRep'] != null) {
         final user = SalesRepModel.fromMap(result['salesRep']);
-        final token = result['token']?.toString();
+        final token =
+            result['accessToken']?.toString() ?? result['token']?.toString();
 
         // Validate token
         if (token == null || token.isEmpty) {
@@ -148,7 +149,7 @@ class AuthController extends GetxController {
         throw Exception('No user logged in');
       }
 
-      final success = await AuthService.updateProfile(
+      final success = await AuthService.instance.updateProfile(
         _currentUser.value!.id,
         data,
       );
@@ -156,7 +157,7 @@ class AuthController extends GetxController {
       if (success) {
         // Reload user data
         final updatedUser =
-            await AuthService.getUserById(_currentUser.value!.id);
+            await AuthService.instance.getUserById(_currentUser.value!.id);
         if (updatedUser != null) {
           _currentUser.value = updatedUser;
 
@@ -179,7 +180,7 @@ class AuthController extends GetxController {
         return false;
       }
 
-      return await AuthService.changePassword(
+      return await AuthService.instance.changePassword(
         _currentUser.value!.id,
         currentPassword,
         newPassword,

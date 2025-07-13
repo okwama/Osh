@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:woosh/services/core/auth_service.dart';
+import 'package:woosh/services/auth_service.dart';
 import 'package:woosh/services/core/session_service.dart';
 import 'package:woosh/models/salerep/sales_rep_model.dart';
 
@@ -75,7 +75,7 @@ class ProfileController extends GetxController {
       }
 
       final response =
-          await AuthService.getProfile(int.parse(userId.toString()));
+          await AuthService.instance.getProfile(int.parse(userId.toString()));
 
       if (response == null) {
         throw Exception('No response received from AuthService');
@@ -165,7 +165,7 @@ class ProfileController extends GetxController {
       final photoUrl =
           'https://example.com/uploads/${DateTime.now().millisecondsSinceEpoch}.jpg';
 
-      final updatedPhotoUrl = await AuthService.updateProfilePhoto(
+      final updatedPhotoUrl = await AuthService.instance.updateProfilePhoto(
         int.parse(userId.toString()),
         photoUrl,
       );
@@ -248,19 +248,17 @@ class ProfileController extends GetxController {
       }
 
       // Call AuthService to update password
-      final result = await AuthService.updatePassword(
-        userId: int.parse(userId.toString()),
-        currentPassword: currentPassword,
-        newPassword: newPassword,
-        confirmPassword: confirmPassword,
+      final success = await AuthService.instance.changePassword(
+        int.parse(userId.toString()),
+        currentPassword,
+        newPassword,
       );
 
-      if (result['success']) {
-        passwordSuccess.value = result['message'];
+      if (success) {
+        passwordSuccess.value = 'Password updated successfully';
       } else {
-        passwordError.value = result['message'];
-        print(
-            'PROFILE CONTROLLER: Password update failed: ${result['message']}');
+        passwordError.value = 'Failed to update password';
+        print('PROFILE CONTROLLER: Password update failed');
       }
     } catch (e) {
       passwordError.value = 'An error occurred: ${e.toString()}';
